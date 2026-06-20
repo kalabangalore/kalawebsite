@@ -4,13 +4,16 @@ import { fileURLToPath } from "url";
 import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Local: load server/.env. On Vercel this file is absent and the vars
+// come from the project's Environment Variables instead (harmless no-op).
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
-  console.error("Missing DATABASE_URL in server/.env");
-  process.exit(1);
+  // Don't process.exit() — that would crash a serverless instance.
+  // Throw so the request handler can return a clean 500 instead.
+  throw new Error("Missing DATABASE_URL environment variable");
 }
 
 export const pool = new Pool({
