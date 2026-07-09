@@ -299,6 +299,35 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .split__media .plate__name { font-size: 13px; font-weight: 600; }
 .split__media .plate__role { font-size: 10.5px; color: var(--brass-soft); line-height: 1.4; }
 .split__media .plate__sub { font-size: 10.5px; color: var(--muted); line-height: 1.4; }
+
+/* Founder photo → video toggle */
+.founder-photo {
+  display: block; width: 100%; padding: 0; position: relative;
+  border-radius: var(--radius); overflow: hidden; cursor: pointer;
+}
+.founder-photo img { transition: transform 0.6s var(--ease), filter 0.4s; }
+.founder-photo:hover img { transform: scale(1.03); filter: brightness(0.82); }
+.founder-play {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 3; width: 72px; height: 72px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--brass); color: var(--ink);
+  box-shadow: 0 10px 30px -8px rgba(15, 31, 27, 0.6);
+  padding-left: 4px; /* optical centering of the triangle */
+  transition: transform 0.4s var(--ease), background 0.3s;
+}
+.founder-photo:hover .founder-play { transform: translate(-50%, -50%) scale(1.1); background: var(--brass-soft); }
+
+.founder-video { position: relative; border-radius: var(--radius); overflow: hidden; background: #000; }
+.founder-video video { display: block; width: 100%; height: auto; border-radius: var(--radius); }
+.founder-back {
+  position: absolute; top: 14px; left: 14px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--secondary); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink); background: var(--brass); padding: 9px 16px; border-radius: var(--radius);
+  transition: transform 0.3s var(--ease), background 0.3s;
+}
+.founder-back:hover { transform: translateY(-2px); background: var(--brass-soft); }
 .section-title { font-size: clamp(30px, 4.6vw, 54px); margin-top: 18px; max-width: 16ch; }
 .paper-bg .section-title { color: var(--text-dark); }
 .prose p { margin-top: 18px; font-size: 17px; line-height: 1.8; color: var(--muted-dark); }

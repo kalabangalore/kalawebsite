@@ -1,11 +1,69 @@
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import { org, banners, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
 
 const officers = council.filter((c) => c.role !== "Governing Members");
+
+// Founder portrait that swaps to a video on click, and back again.
+function FounderMedia() {
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {playing ? (
+        <motion.div
+          key="video"
+          className="founder-video"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <video
+            src="/founder-video.mp4"
+            poster={org.founder}
+            controls
+            autoPlay
+            playsInline
+            onEnded={() => setPlaying(false)}
+          />
+          <span className="frame" />
+          <button className="founder-back" onClick={() => setPlaying(false)}>
+            ← Back to photo
+          </button>
+        </motion.div>
+      ) : (
+        <motion.button
+          key="photo"
+          type="button"
+          className="founder-photo"
+          onClick={() => setPlaying(true)}
+          aria-label="Play the film about Dr. S. R. Ranganathan"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <img src={org.founder} alt="Dr. S. R. Ranganathan" />
+          <span className="founder-play" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26">
+              <path d="M8 5v14l11-7z" fill="currentColor" />
+            </svg>
+          </span>
+          <span className="frame" />
+          <span className="plate">
+            <span className="plate__name">Dr. S. R. Ranganathan</span>
+            <span className="plate__role">Father of Library Science, India</span>
+            <span className="plate__sub">Founder of Karnataka State Library Association</span>
+          </span>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function Hero() {
   const ref = useRef(null);
@@ -121,13 +179,7 @@ export default function Home() {
             <Link to="/aims-objectives" className="btn btn--ghost mt-l">Read our aims & objectives</Link>
           </Reveal>
           <Reveal delay={0.1} className="split__media">
-            <img src={org.founder} alt="Dr. S. R. Ranganathan" />
-            <span className="frame" />
-            <span className="plate">
-              <span className="plate__name">Dr. S. R. Ranganathan</span>
-              <span className="plate__role">Father of Library Science, India</span>
-              <span className="plate__sub">Founder of Karnataka State Library Association</span>
-            </span>
+            <FounderMedia />
           </Reveal>
         </div>
       </section>

@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"node server/index.js\"",
-    "web": "vite",
-    "server": "node server/index.js",
+    "dev": "vite",
+    "api": "node server/index.js",
+    "dev:full": "concurrently -n web,api -c cyan,magenta \"vite\" \"node server/index.js\"",
     "db:init": "node server/init.js",
     "build": "vite build",
     "preview": "vite preview"
