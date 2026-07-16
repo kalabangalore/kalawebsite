@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { api, getToken, setToken, clearToken } from "../lib/api";
 
 const STATUS_LABEL = { pending: "Pending", active: "Active", rejected: "Rejected" };

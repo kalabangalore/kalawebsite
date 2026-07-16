@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Stagger, stagItem } from "../components/primitives";
 import { blog } from "../data/content";

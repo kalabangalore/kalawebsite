@@ -28,7 +28,7 @@ export const council = [
   {
     role: "Secretaries",
     name: "Dr. Shekara H P\nGeneral Secretary",
-    img: "/shekara.png",
+    img: "/shekara.jpg",
     detail:
       "Librarian, JAIN (Deemed-to-be University), Shankaramutt Road, Bangalore-4",
     email: "drshekarhp2803@gmail.com",

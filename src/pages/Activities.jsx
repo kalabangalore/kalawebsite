@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
 import { activities } from "../data/activities";

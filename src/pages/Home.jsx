@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
+import { useRef, useState, useEffect } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
-import { org, banners, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
+import { org, banners, heroSlides, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
 
 const officers = council.filter((c) => c.role !== "Governing Members");
@@ -71,14 +71,42 @@ function Hero() {
   const y = useTransform(scrollYProgress, [0, 1], [0, 160]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
 
+  const [slide, setSlide] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5000);
+    return () => clearInterval(id);
+  }, []);
+
   const tick = ["Founded by Dr. S. R. Ranganathan", "Registered Association", "1500+ Members", "Since the Mysore State Library Association"];
 
   return (
     <section className="hero" ref={ref}>
       <motion.div className="hero__bg" style={{ y, scale }}>
-        <img src={banners[1].img} alt="" />
+        {heroSlides.map((src, i) => (
+          <img key={i} src={src} alt="" className={i === slide ? "is-on" : ""} />
+        ))}
       </motion.div>
       <div className="hero__grain" />
+
+      <div className="hero__dots">
+        {heroSlides.map((_, i) => (
+          <button
+            key={i}
+            className={`hero__dot ${i === slide ? "is-on" : ""}`}
+            onClick={() => setSlide(i)}
+            aria-label={`Show slide ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      <motion.div
+        className="hero__title"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        Karnataka State Library Association
+      </motion.div>
 
       <div className="hero__inner wrap">
         <motion.span
@@ -87,7 +115,7 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          Karnataka State Library Association
+          Established in the lineage of Dr. S. R. Ranganathan
         </motion.span>
 
         <h1>

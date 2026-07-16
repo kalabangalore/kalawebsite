@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView } from "motion/react";
 
 // Scroll-reveal wrapper — rises and fades in once.
 export function Reveal({ children, delay = 0, y = 28, className, as = "div" }) {

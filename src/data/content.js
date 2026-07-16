@@ -13,6 +13,15 @@ export const org = {
     "General Secretary, Karnataka State Library Association (R), Dr. Vishnuvardhan Memorial Study Center, Govindaraja Nagar Ward, MC Layout, Vijayanagar, Bengaluru - 560 040",
 };
 
+// Hero background carousel (ICRL-2026 event photos).
+export const heroSlides = [
+  "/carousel/1.jpeg",
+  "/carousel/2.jpeg",
+  "/carousel/3.jpeg",
+  "/carousel/4.jpeg",
+  "/carousel/5.jpeg",
+];
+
 export const banners = [
   {
     img: "https://kalaonline.com/web-admin/uploads/images/banner/banner_1733309452.jpg",
