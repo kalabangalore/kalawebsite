@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { useRef, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState, useEffect } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import { org, banners, heroSlides, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
@@ -66,11 +66,6 @@ function FounderMedia() {
 }
 
 function Hero() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 160]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
-
   const [slide, setSlide] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5000);
@@ -78,47 +73,54 @@ function Hero() {
   }, []);
 
   return (
-    <section className="hero" ref={ref}>
-      <motion.div className="hero__bg" style={{ y, scale }}>
-        {heroSlides.map((src, i) => (
-          <img key={i} src={src} alt="" className={i === slide ? "is-on" : ""} />
-        ))}
-      </motion.div>
+    <section className="hero">
+      <div className="hero__top wrap">
+        <motion.img
+          className="hero__logo"
+          src={org.logo}
+          alt="KALA logo"
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        />
 
-      <div className="hero__dots">
-        {heroSlides.map((_, i) => (
-          <button
-            key={i}
-            className={`hero__dot ${i === slide ? "is-on" : ""}`}
-            onClick={() => setSlide(i)}
-            aria-label={`Show slide ${i + 1}`}
-          />
-        ))}
-      </div>
-
-      <div className="hero__content wrap">
-        <motion.div
-          className="hero__brand"
-          initial={{ opacity: 0, y: 20 }}
+        <motion.h1
+          className="hero__heading"
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="hero__brandtext">
-            <span className="hero__short">{org.short}</span>
-            <span className="hero__full">{org.name}</span>
-          </div>
-        </motion.div>
+          Karnataka State Library Association (R)
+        </motion.h1>
 
         <motion.div
           className="hero__founder"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
         >
           <img src={org.founder} alt="Dr. S. R. Ranganathan" />
           <span className="frame" />
-          <span className="hero__foundercap">Dr. S. R. Ranganathan</span>
         </motion.div>
+      </div>
+
+      <div className="wrap">
+        <div className="hero__bg">
+          {heroSlides.map((src, i) => (
+            <img key={i} src={src} alt="" className={i === slide ? "is-on" : ""} />
+          ))}
+
+          <div className="hero__dots">
+            {heroSlides.map((_, i) => (
+              <button
+                key={i}
+                className={`hero__dot ${i === slide ? "is-on" : ""}`}
+                onClick={() => setSlide(i)}
+                aria-label={`Show slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

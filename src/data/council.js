@@ -8,8 +8,8 @@ export const council = [
     phone: "+919449070311",
   },
   {
-    role: "Vice President",
-    name: "Dr. Nagappa B.",
+    role: "Vice Presidents",
+    name: "Dr. Nagappa V Bakkannanavar",
     img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1734262616.jpeg",
     detail:
       "Branch Head, Information Resource Centre, Tata Consultancy Services, Pioneer Building, International Tech Park, Padandhur Agrahara, Whitefield Road Bangalore-66",
@@ -17,7 +17,7 @@ export const council = [
     phone: "",
   },
   {
-    role: "Vice President",
+    role: "Vice Presidents",
     name: "Dr. Subhash Reddy B",
     img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1637226997.jpg",
     detail:
