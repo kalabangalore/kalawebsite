@@ -222,61 +222,14 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .hero__bg { position: absolute; inset: 0; z-index: 0; }
 .hero__bg img {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-  filter: brightness(0.46) saturate(1.05);
   opacity: 0; transition: opacity 1.2s ease;
 }
 .hero__bg img.is-on { opacity: 1; }
-.hero__bg::after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(120% 80% at 15% 110%, rgba(15,31,27,0.96), transparent 60%),
-    linear-gradient(180deg, rgba(15,31,27,0.7) 0%, rgba(15,31,27,0.2) 35%, rgba(15,31,27,0.95) 100%);
-}
-.hero__grain {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0.5;
-  background-image: radial-gradient(rgba(244,240,230,0.05) 1px, transparent 1px);
-  background-size: 4px 4px;
-}
 .hero__dots { position: absolute; z-index: 3; right: 24px; bottom: 80px; display: flex; gap: 10px; }
 .hero__dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(244, 240, 230, 0.35); transition: background 0.3s, transform 0.3s; }
 .hero__dot:hover { background: rgba(244, 240, 230, 0.65); }
 .hero__dot.is-on { background: var(--brass); transform: scale(1.25); }
 @media (max-width: 620px) { .hero__dots { bottom: 70px; } }
-
-.hero__title {
-  position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
-  top: clamp(96px, 15vh, 150px); width: min(92%, 960px); text-align: center;
-  font-family: var(--primary); font-weight: 600; text-transform: uppercase;
-  font-size: clamp(20px, 3.4vw, 44px); line-height: 1.1; letter-spacing: 0.03em;
-  color: var(--text); text-shadow: 0 2px 20px rgba(15, 31, 27, 0.6);
-}
-.hero__title::after {
-  content: ""; display: block; width: 54px; height: 2px; background: var(--brass);
-  margin: 16px auto 0;
-}
-
-.hero__inner { position: relative; z-index: 2; width: 100%; padding-bottom: clamp(56px, 8vw, 110px); }
-.hero h1 {
-  font-size: clamp(46px, 8.5vw, 116px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  max-width: 15ch;
-}
-.hero h1 em { font-style: italic; color: var(--brass-soft); font-weight: 500; }
-.hero__sub { margin-top: 28px; max-width: 52ch; font-size: clamp(16px,1.8vw,19px); line-height: 1.7; color: var(--muted); }
-.hero__actions { margin-top: 38px; display: flex; gap: 14px; flex-wrap: wrap; }
-
-.hero__ticker {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
-  border-top: 1px solid var(--line);
-  background: rgba(15,31,27,0.6);
-  backdrop-filter: blur(6px);
-  overflow: hidden;
-  white-space: nowrap;
-}
-.hero__ticker-track { display: inline-flex; gap: 48px; padding: 13px 0; font-family: var(--secondary); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-.hero__ticker-track span { display: inline-flex; align-items: center; gap: 48px; }
-.hero__ticker-track b { color: var(--brass); font-weight: 500; }
 
 /* ============================================================
    Slide strip (banners) under hero

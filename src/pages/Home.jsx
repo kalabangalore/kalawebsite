@@ -77,8 +77,6 @@ function Hero() {
     return () => clearInterval(id);
   }, []);
 
-  const tick = ["Founded by Dr. S. R. Ranganathan", "Registered Association", "1500+ Members", "Since the Mysore State Library Association"];
-
   return (
     <section className="hero" ref={ref}>
       <motion.div className="hero__bg" style={{ y, scale }}>
@@ -86,7 +84,6 @@ function Hero() {
           <img key={i} src={src} alt="" className={i === slide ? "is-on" : ""} />
         ))}
       </motion.div>
-      <div className="hero__grain" />
 
       <div className="hero__dots">
         {heroSlides.map((_, i) => (
@@ -97,78 +94,6 @@ function Hero() {
             aria-label={`Show slide ${i + 1}`}
           />
         ))}
-      </div>
-
-      <motion.div
-        className="hero__title"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
-        Karnataka State Library Association
-      </motion.div>
-
-      <div className="hero__inner wrap">
-        <motion.span
-          className="eyebrow"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          Established in the lineage of Dr. S. R. Ranganathan
-        </motion.span>
-
-        <h1>
-          {["The science", "of the library,", <em key="e">kept alive.</em>].map((line, i) => (
-            <motion.span
-              key={i}
-              style={{ display: "block" }}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 + i * 0.12 }}
-            >
-              {line}
-            </motion.span>
-          ))}
-        </h1>
-
-        <motion.p
-          className="hero__sub"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.55 }}
-        >
-          A registered professional body advancing library and information science across Karnataka —
-          carrying forward the work begun by the Father of Library Science in India.
-        </motion.p>
-
-        <motion.div
-          className="hero__actions"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.7 }}
-        >
-          <Link to="/membership" className="btn btn--solid">Become a member →</Link>
-          <Link to="/aims-objectives" className="btn btn--ghost">Our aims</Link>
-        </motion.div>
-      </div>
-
-      <div className="hero__ticker">
-        <motion.div
-          className="hero__ticker-track"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 26, repeat: Infinity, ease: "linear" }}
-        >
-          {[0, 1].map((dup) => (
-            <span key={dup}>
-              {tick.map((t, i) => (
-                <span key={i}>
-                  <b>✦</b> {t}
-                </span>
-              ))}
-            </span>
-          ))}
-        </motion.div>
       </div>
     </section>
   );
