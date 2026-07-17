@@ -95,6 +95,31 @@ function Hero() {
           />
         ))}
       </div>
+
+      <div className="hero__content wrap">
+        <motion.div
+          className="hero__brand"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="hero__brandtext">
+            <span className="hero__short">{org.short}</span>
+            <span className="hero__full">{org.name}</span>
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="hero__founder"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img src={org.founder} alt="Dr. S. R. Ranganathan" />
+          <span className="frame" />
+          <span className="hero__foundercap">Dr. S. R. Ranganathan</span>
+        </motion.div>
+      </div>
     </section>
   );
 }
