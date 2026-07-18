@@ -17,10 +17,9 @@ const SAMPLE_DATA = {
 const PLACEHOLDER_FIELDS = [
   { key: "membershipNo", label: "Membership No.", fields: ["x", "y", "fontSize"] },
   { key: "name", label: "Name", fields: ["x", "y", "fontSize"] },
-  { key: "body", label: "Body paragraph", fields: ["x", "y", "width", "height", "fontSize"] },
 ];
 
-const FIELD_LABEL = { x: "X %", y: "Top %", width: "Width %", height: "Height %", fontSize: "Font size" };
+const FIELD_LABEL = { x: "X %", y: "Top %", fontSize: "Font size" };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
@@ -62,14 +61,7 @@ function CertificateLayout() {
     if (!d) return;
     const dxFrac = (e.clientX - d.startX) / d.rect.width;
     const dyFrac = (e.clientY - d.startY) / d.rect.height;
-    if (d.mode === "move") {
-      patch(d.key, { x: clamp01(d.start.x + dxFrac), y: clamp01(d.start.y + dyFrac) });
-    } else {
-      patch(d.key, {
-        width: Math.max(0.08, d.start.width + dxFrac),
-        height: Math.max(0.03, (d.start.height ?? 0.1) + dyFrac),
-      });
-    }
+    patch(d.key, { x: clamp01(d.start.x + dxFrac), y: clamp01(d.start.y + dyFrac) });
   }
 
   function onDragEnd() {
@@ -78,13 +70,12 @@ function CertificateLayout() {
     window.removeEventListener("pointerup", onDragEnd);
   }
 
-  function beginDrag(e, key, mode) {
+  function beginDrag(e, key) {
     e.preventDefault();
     e.stopPropagation();
     if (!stageRef.current) return;
     dragRef.current = {
       key,
-      mode,
       rect: stageRef.current.getBoundingClientRect(),
       start: { ...layout[key] },
       startX: e.clientX,
@@ -108,8 +99,6 @@ function CertificateLayout() {
   }
 
   if (!layout) return <p className="formnote" style={{ padding: "24px 8px" }}>Loading layout…</p>;
-
-  const body = layout.body;
 
   return (
     <div className="certlayout">
@@ -157,7 +146,7 @@ function CertificateLayout() {
             <div
               className="certlayout__handle"
               style={{ left: `${layout.membershipNo.x * 100}%`, top: `${layout.membershipNo.y * 100}%` }}
-              onPointerDown={(e) => beginDrag(e, "membershipNo", "move")}
+              onPointerDown={(e) => beginDrag(e, "membershipNo")}
             >
               Membership No.
             </div>
@@ -165,26 +154,9 @@ function CertificateLayout() {
             <div
               className="certlayout__handle"
               style={{ left: `${layout.name.x * 100}%`, top: `${layout.name.y * 100}%` }}
-              onPointerDown={(e) => beginDrag(e, "name", "move")}
+              onPointerDown={(e) => beginDrag(e, "name")}
             >
               Name
-            </div>
-
-            <div
-              className="certlayout__box"
-              style={{
-                left: `${(body.x - body.width / 2) * 100}%`,
-                top: `${body.y * 100}%`,
-                width: `${body.width * 100}%`,
-                height: `${(body.height ?? 0.18) * 100}%`,
-              }}
-              onPointerDown={(e) => beginDrag(e, "body", "move")}
-            >
-              <span className="certlayout__boxlabel">Body paragraph</span>
-              <span
-                className="certlayout__resize"
-                onPointerDown={(e) => beginDrag(e, "body", "resize")}
-              />
             </div>
           </div>
         </div>

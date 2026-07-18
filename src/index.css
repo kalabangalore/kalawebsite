@@ -697,23 +697,6 @@ h3 { font-family: var(--primary); font-weight: 600; }
   cursor: grab; box-shadow: 0 4px 14px rgba(0,0,0,0.45); touch-action: none;
 }
 .certlayout__handle:active { cursor: grabbing; }
-.certlayout__box {
-  position: absolute; border: 1.5px dashed var(--brass); background: rgba(194,135,63,0.12);
-  cursor: grab; touch-action: none;
-}
-.certlayout__box:active { cursor: grabbing; }
-.certlayout__boxlabel {
-  position: absolute; top: -22px; left: 0;
-  padding: 3px 8px; border-radius: 999px;
-  background: var(--brass); color: var(--ink);
-  font-family: var(--secondary); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
-  white-space: nowrap;
-}
-.certlayout__resize {
-  position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
-  border-radius: 50%; background: var(--brass); border: 2px solid var(--ink);
-  cursor: nwse-resize; touch-action: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

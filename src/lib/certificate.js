@@ -5,53 +5,10 @@
 export const CANVAS_W = 2210;
 export const CANVAS_H = 1493;
 
-export const TYPE_LABEL = {
-  life: "Life",
-  institutional: "Institutional",
-  student: "Student",
-};
-
 export const DEFAULT_LAYOUT = {
   membershipNo: { x: 0.655, y: 0.185, fontSize: 34, color: "#1a2a52", align: "left", weight: 700 },
   name: { x: 0.5, y: 0.585, fontSize: 64, color: "#1a2a52", align: "center", weight: 700 },
-  body: { x: 0.5, y: 0.6, width: 0.78, height: 0.18, fontSize: 40, color: "#1a2a52", align: "center", lineHeight: 1.45 },
 };
-
-function formatDate(d) {
-  if (!d) return "";
-  const dt = new Date(d);
-  if (Number.isNaN(dt.getTime())) return String(d);
-  const dd = String(dt.getDate()).padStart(2, "0");
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  return `${dd}.${mm}.${dt.getFullYear()}`;
-}
-
-export function buildBodyText({ membership_type, verified_date }) {
-  const typeLabel = TYPE_LABEL[membership_type] || "Life";
-  const date = formatDate(verified_date) || formatDate(new Date());
-  return (
-    `who is a ${typeLabel} Member of  Karnataka State Library Association ®(KALA) verified as ` +
-    `on ${date}. The Association has granted the member all the rights and privileges outlined in the bylaws of KALA.`
-  );
-}
-
-// Greedy word-wrap for a canvas 2D context.
-function wrapLines(ctx, text, maxWidth) {
-  const words = text.split(" ");
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
 
 // Draws the certificate onto a canvas element.
 // data: { name, membership_type, membership_no, verified_date }
@@ -79,33 +36,6 @@ export function drawCertificate(canvas, { templateImg, layout, data }) {
   ctx.textAlign = n.align;
   ctx.textBaseline = "middle";
   ctx.fillText(data.name || "", n.x * CANVAS_W, n.y * CANVAS_H);
-
-  // Body paragraph — mask the whole box over the template's baked-in text
-  // (a fixed box, not sized to the new text, so it reliably covers the
-  // original regardless of how the redrawn text wraps), then redraw fresh,
-  // vertically centered inside that box.
-  const b = L.body;
-  const boxW = b.width * CANVAS_W;
-  const boxH = (b.height ?? 0.2) * CANVAS_H;
-  const boxTop = b.y * CANVAS_H;
-  const boxLeft = b.x * CANVAS_W - boxW / 2;
-  const lineHeight = b.fontSize * (b.lineHeight || 1.45);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(boxLeft, boxTop, boxW, boxH);
-
-  const text = buildBodyText(data);
-  ctx.font = `${b.fontSize}px Inter, Arial, sans-serif`;
-  const lines = wrapLines(ctx, text, boxW);
-  const textH = lines.length * lineHeight;
-  const firstLineY = boxTop + (boxH - textH) / 2 + lineHeight / 2;
-
-  ctx.fillStyle = b.color;
-  ctx.textAlign = b.align;
-  ctx.textBaseline = "middle";
-  lines.forEach((line, i) => {
-    ctx.fillText(line, b.x * CANVAS_W, firstLineY + i * lineHeight);
-  });
 }
 
 const imageCache = new Map();
