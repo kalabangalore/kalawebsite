@@ -223,7 +223,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .hero__top {
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
   padding-top: clamp(120px, 15vw, 158px);
-  padding-bottom: clamp(24px, 3.4vw, 36px);
+  padding-bottom: clamp(8px, 1.2vw, 14px);
 }
 .hero__logo { height: clamp(72px, 8vw, 104px); width: auto; flex: none; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.4)); }
 .hero__heading {
@@ -669,6 +669,24 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .seg button.is-on { background: var(--brass); color: var(--ink); }
 .btn.danger { border-color: rgba(217,138,124,0.4); color: #d98a7c; }
 .btn.danger:hover { border-color: #d98a7c; color: #e8a99c; }
+
+/* ============================================================
+   Certificate
+   ============================================================ */
+.certcanvas { width: 100%; border-radius: var(--radius); overflow: hidden; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.5); }
+.certcanvas canvas { display: block; width: 100%; height: auto; background: #fff; }
+
+.certpreview { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ink-2); }
+.certref { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.certref b { color: var(--brass-soft); letter-spacing: 0.04em; }
+
+.certlayout__grid { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; margin-top: 24px; }
+.certlayout__fields { display: flex; flex-direction: column; gap: 20px; }
+.certlayout__preview { position: sticky; top: 24px; }
+@media (max-width: 960px) {
+  .certlayout__grid { grid-template-columns: 1fr; }
+  .certlayout__preview { position: static; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

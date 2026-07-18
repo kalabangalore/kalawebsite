@@ -65,8 +65,28 @@ export async function initSchema() {
       notes         TEXT
     );
   `);
+
+  // Columns added after the table's initial release — CREATE TABLE IF NOT
+  // EXISTS is a no-op on an existing table, so these need their own
+  // idempotent ALTERs to reach databases that predate them.
+  await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_ref TEXT;`);
+  await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS membership_no TEXT;`);
+  await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS verified_date TEXT;`);
+
   await q(`CREATE INDEX IF NOT EXISTS members_status_idx ON members (status);`);
   await q(`CREATE INDEX IF NOT EXISTS members_created_idx ON members (created_at DESC);`);
+  await q(
+    `CREATE UNIQUE INDEX IF NOT EXISTS members_certificate_ref_idx ON members (certificate_ref) WHERE certificate_ref IS NOT NULL;`
+  );
+
+  // Generic key/value settings store — currently just the certificate placeholder layout.
+  await q(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key        TEXT PRIMARY KEY,
+      value      JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 // Columns clients are allowed to write (applicant + admin editable).
@@ -100,4 +120,6 @@ export const ADMIN_WRITABLE = [
   "amount_paid",
   "admitted_as",
   "notes",
+  "membership_no",
+  "verified_date",
 ];

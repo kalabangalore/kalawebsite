@@ -14,6 +14,7 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import WhatsNew from "./pages/WhatsNew";
 import Contact from "./pages/Contact";
+import Certificate from "./pages/Certificate";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<Page><BlogPost /></Page>} />
           <Route path="/whats-new" element={<Page><WhatsNew /></Page>} />
           <Route path="/contact" element={<Page><Contact /></Page>} />
+          <Route path="/certificate" element={<Page><Certificate /></Page>} />
           <Route path="*" element={<Page><NotFound /></Page>} />
       </Routes>
       <Newsletter />

@@ -48,4 +48,10 @@ export const api = {
   updateMember: (id, body) =>
     request(`/admin/members/${id}`, { method: "PATCH", body, auth: true }),
   deleteMember: (id) => request(`/admin/members/${id}`, { method: "DELETE", auth: true }),
+
+  getCertificateLayout: () => request("/certificate/layout"),
+  updateCertificateLayout: (body) =>
+    request("/admin/certificate/layout", { method: "PUT", body, auth: true }),
+  lookupCertificate: (ref) =>
+    request(`/certificate/lookup?ref=${encodeURIComponent(ref)}`),
 };

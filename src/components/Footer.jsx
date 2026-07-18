@@ -47,6 +47,7 @@ export function Footer() {
             <h4>Members</h4>
             <Link to="/members">Members</Link>
             <Link to="/membership">Membership</Link>
+            <Link to="/certificate">Find my certificate</Link>
             <Link to="/blog">Blog</Link>
             <Link to="/whats-new">What's New</Link>
           </div>

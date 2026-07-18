@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import { q, initSchema, WRITABLE, ADMIN_WRITABLE } from "./db.js";
+import { DEFAULT_LAYOUT, genCertRef, genMembershipNo } from "./certificate.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
@@ -66,18 +67,53 @@ app.post("/api/membership", async (req, res) => {
       return res.status(400).json({ error: "Name is required" });
     }
     const { cols, vals } = pick(req.body, WRITABLE);
-    cols.push("status", "source");
-    vals.push("pending", "form");
+    cols.push("status", "source", "certificate_ref");
+    vals.push("pending", "form", genCertRef());
     const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
-    const { rows } = await q(
-      `INSERT INTO members (${cols.join(", ")}) VALUES (${ph}) RETURNING id`,
-      vals
-    );
-    res.status(201).json({ ok: true, id: rows[0].id });
+
+    // Retry a couple of times in the astronomically unlikely event of a
+    // certificate_ref collision (unique index on the column).
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const { rows } = await q(
+          `INSERT INTO members (${cols.join(", ")}) VALUES (${ph}) RETURNING id, certificate_ref`,
+          vals
+        );
+        return res.status(201).json({ ok: true, id: rows[0].id, certificate_ref: rows[0].certificate_ref });
+      } catch (err) {
+        if (err.code === "23505" && attempt < 4) {
+          vals[vals.length - 1] = genCertRef();
+          continue;
+        }
+        throw err;
+      }
+    }
   } catch (err) {
     console.error("submit error:", err.message);
     res.status(500).json({ error: "Could not save your application. Please try again." });
   }
+});
+
+// Public: fetch the current certificate placeholder layout.
+app.get("/api/certificate/layout", async (_req, res) => {
+  const { rows } = await q(`SELECT value FROM settings WHERE key = 'certificate_layout'`);
+  res.json(rows[0]?.value || DEFAULT_LAYOUT);
+});
+
+// Public: look up a member's certificate by their reference code.
+app.get("/api/certificate/lookup", async (req, res) => {
+  const ref = (req.query.ref || "").trim().toUpperCase();
+  if (!ref) return res.status(400).json({ error: "Reference code is required" });
+  const { rows } = await q(
+    `SELECT status, name, membership_type, membership_no, verified_date FROM members WHERE certificate_ref = $1`,
+    [ref]
+  );
+  if (!rows.length) return res.status(404).json({ error: "No application found for that reference code" });
+  const m = rows[0];
+  if (m.status !== "active") {
+    return res.json({ status: m.status, name: m.name, membership_type: m.membership_type });
+  }
+  res.json(m);
 });
 
 // ---- admin auth ----------------------------------------------------------
@@ -157,7 +193,26 @@ app.post("/api/admin/members", auth, async (req, res) => {
 // Update a member (status, type, any editable field).
 app.patch("/api/admin/members/:id", auth, async (req, res) => {
   try {
-    const { cols, vals } = pick(req.body, ADMIN_WRITABLE);
+    const body = { ...req.body };
+
+    // Approving a member issues a certificate: auto-fill the membership
+    // number and verified date the first time, if the admin hasn't already
+    // set them by hand.
+    if (body.status === "active") {
+      const { rows } = await q("SELECT id, membership_type, membership_no, verified_date FROM members WHERE id = $1", [
+        req.params.id,
+      ]);
+      if (!rows.length) return res.status(404).json({ error: "Not found" });
+      const existing = rows[0];
+      if (!existing.membership_no && !body.membership_no) {
+        body.membership_no = genMembershipNo(existing);
+      }
+      if (!existing.verified_date && !body.verified_date) {
+        body.verified_date = new Date().toISOString().slice(0, 10);
+      }
+    }
+
+    const { cols, vals } = pick(body, ADMIN_WRITABLE);
     if (!cols.length) return res.status(400).json({ error: "Nothing to update" });
     const set = cols.map((c, i) => `${c} = $${i + 1}`).join(", ");
     vals.push(req.params.id);
@@ -170,6 +225,22 @@ app.patch("/api/admin/members/:id", auth, async (req, res) => {
   } catch (err) {
     console.error("update error:", err.message);
     res.status(500).json({ error: "Could not update member" });
+  }
+});
+
+// Admin: update the shared certificate placeholder layout (reads happen via
+// the public GET /api/certificate/layout above — same data, no auth needed to view it).
+app.put("/api/admin/certificate/layout", auth, async (req, res) => {
+  try {
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('certificate_layout', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(req.body)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("layout update error:", err.message);
+    res.status(500).json({ error: "Could not save layout" });
   }
 });
 

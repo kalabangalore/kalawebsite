@@ -1,9 +1,113 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api, getToken, setToken, clearToken } from "../lib/api";
+import CertificateCanvas from "../components/CertificateCanvas";
+import { DEFAULT_LAYOUT } from "../lib/certificate";
 
 const STATUS_LABEL = { pending: "Pending", active: "Active", rejected: "Rejected" };
 const TYPE_LABEL = { life: "Life", institutional: "Institutional", student: "Student" };
+
+const SAMPLE_DATA = {
+  name: "Jane Doe",
+  membership_type: "life",
+  membership_no: "KALA-L-2026-000001",
+  verified_date: new Date().toISOString().slice(0, 10),
+};
+
+const PLACEHOLDER_FIELDS = [
+  { key: "membershipNo", label: "Membership No.", fields: ["x", "y", "fontSize"] },
+  { key: "name", label: "Name", fields: ["x", "y", "fontSize"] },
+  { key: "body", label: "Body paragraph", fields: ["x", "y", "width", "height", "fontSize"] },
+];
+
+const FIELD_LABEL = { x: "X %", y: "Top %", width: "Width %", height: "Height %", fontSize: "Font size" };
+
+/* ---------------------------------------------------- certificate layout */
+function CertificateLayout() {
+  const [layout, setLayout] = useState(null);
+  const [variant, setVariant] = useState("draft");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api
+      .getCertificateLayout()
+      .then((l) => setLayout({ ...DEFAULT_LAYOUT, ...l }))
+      .catch((e) => setError(e.message));
+  }, []);
+
+  function update(key, field, value) {
+    setSaved(false);
+    setLayout((l) => ({
+      ...l,
+      [key]: {
+        ...l[key],
+        [field]: field === "fontSize" ? Number(value) : Number(value) / 100,
+      },
+    }));
+  }
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    try {
+      await api.updateCertificateLayout(layout);
+      setSaved(true);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!layout) return <p className="formnote" style={{ padding: "24px 8px" }}>Loading layout…</p>;
+
+  return (
+    <div className="certlayout">
+      <div className="certlayout__grid">
+        <div className="certlayout__fields">
+          {PLACEHOLDER_FIELDS.map((pf) => (
+            <fieldset className="mfieldset" key={pf.key}>
+              <legend>{pf.label}</legend>
+              <div className="row2">
+                {pf.fields.map((f) => (
+                  <div className="field" key={f}>
+                    <label>{FIELD_LABEL[f]}</label>
+                    <input
+                      type="number"
+                      step={f === "fontSize" ? 1 : 0.1}
+                      value={f === "fontSize" ? layout[pf.key][f] : Math.round(layout[pf.key][f] * 1000) / 10}
+                      onChange={(e) => update(pf.key, f, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+
+          <div className="seg" style={{ marginTop: 4 }}>
+            <button className={variant === "draft" ? "is-on" : ""} onClick={() => setVariant("draft")}>
+              Draft
+            </button>
+            <button className={variant === "signed" ? "is-on" : ""} onClick={() => setVariant("signed")}>
+              Signed
+            </button>
+          </div>
+
+          {error && <p className="formnote" style={{ color: "#b3402f" }}>{error}</p>}
+          <button className="btn btn--solid" disabled={saving} onClick={save} style={{ alignSelf: "flex-start" }}>
+            {saving ? "Saving…" : saved ? "Saved ✓" : "Save layout"}
+          </button>
+        </div>
+
+        <div className="certlayout__preview">
+          <CertificateCanvas variant={variant} layout={layout} data={SAMPLE_DATA} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ login */
 function Login({ onIn }) {
@@ -57,6 +161,14 @@ function Login({ onIn }) {
 
 /* ------------------------------------------------------------- detail modal */
 function Detail({ m, onClose, onChange, onDelete }) {
+  const [showCert, setShowCert] = useState(false);
+  const [layout, setLayout] = useState(null);
+
+  function togglePreview() {
+    if (!showCert && !layout) api.getCertificateLayout().then(setLayout).catch(() => {});
+    setShowCert((s) => !s);
+  }
+
   const row = (k, v) => v && (
     <div className="drow"><span>{k}</span><b>{v}</b></div>
   );
@@ -101,7 +213,17 @@ function Detail({ m, onClose, onChange, onDelete }) {
               {row("Inst. telephone", m.inst_telephone)}
             </>
           )}
+          {row("Reference code", m.certificate_ref)}
+          {row("Membership No.", m.membership_no)}
+          {row("Verified date", m.verified_date)}
           {row("Submitted", new Date(m.created_at).toLocaleString())}
+
+          {showCert && (
+            <div className="drow drow--block">
+              <span>Certificate</span>
+              <CertificateCanvas variant={m.status === "active" ? "signed" : "draft"} layout={layout} data={m} />
+            </div>
+          )}
         </div>
 
         <div className="modal__actions">
@@ -112,6 +234,9 @@ function Detail({ m, onClose, onChange, onDelete }) {
               </button>
             ))}
           </div>
+          <button className="btn btn--ghost" onClick={togglePreview}>
+            {showCert ? "Hide certificate" : "Preview certificate"}
+          </button>
           <button className="btn btn--ghost danger" onClick={() => onDelete(m.id)}>Delete</button>
         </div>
       </motion.div>
@@ -164,6 +289,7 @@ function AddForm({ onAdd, onClose }) {
 
 /* ------------------------------------------------------------------ dashboard */
 function Dashboard({ onOut }) {
+  const [view, setView] = useState("members"); // members | layout
   const [stats, setStats] = useState(null);
   const [members, setMembers] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -220,12 +346,20 @@ function Dashboard({ onOut }) {
           <span className="eyebrow">KALA Administration</span>
           <h1 className="h-display" style={{ fontSize: 30 }}>Membership desk</h1>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn--solid" onClick={() => setAdding(true)}>+ Add member</button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div className="seg">
+            <button className={view === "members" ? "is-on" : ""} onClick={() => setView("members")}>Members</button>
+            <button className={view === "layout" ? "is-on" : ""} onClick={() => setView("layout")}>Certificate layout</button>
+          </div>
+          {view === "members" && <button className="btn btn--solid" onClick={() => setAdding(true)}>+ Add member</button>}
           <button className="btn btn--ghost" onClick={() => { clearToken(); onOut(); }}>Sign out</button>
         </div>
       </div>
 
+      {view === "layout" ? (
+        <CertificateLayout />
+      ) : (
+      <>
       <div className="admin__stats">
         {[
           ["Total", stats?.total, "all"],
@@ -274,6 +408,8 @@ function Dashboard({ onOut }) {
         {!loading && members.length === 0 && <p className="formnote" style={{ padding: "24px 8px" }}>No members in this view yet.</p>}
         {loading && <p className="formnote" style={{ padding: "24px 8px" }}>Loading…</p>}
       </div>
+      </>
+      )}
 
       <AnimatePresence>
         {active && <Detail m={active} onClose={() => setActive(null)} onChange={change} onDelete={remove} />}

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../lib/api";
+import CertificateCanvas from "./CertificateCanvas";
 
 const TYPES = [
   { value: "life", label: "Life", fee: "₹300 / annum" },
@@ -41,8 +42,14 @@ function Field({ label, children, full }) {
 
 export default function MembershipForm() {
   const [f, setF] = useState(empty);
-  const [state, setState] = useState("idle"); // idle | sending | done | error
+  const [state, setState] = useState("idle"); // idle | preview | sending | done | error
   const [err, setErr] = useState("");
+  const [certRef, setCertRef] = useState("");
+  const [layout, setLayout] = useState(null);
+
+  useEffect(() => {
+    api.getCertificateLayout().then(setLayout).catch(() => {});
+  }, []);
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const setExp = (i, k) => (e) =>
@@ -53,8 +60,13 @@ export default function MembershipForm() {
       return { ...p, experience };
     });
 
-  async function submit(e) {
+  function goToPreview(e) {
     e.preventDefault();
+    setState("preview");
+    window.scrollTo({ top: document.getElementById("apply").offsetTop - 80, behavior: "smooth" });
+  }
+
+  async function submit() {
     setState("sending");
     setErr("");
     try {
@@ -62,9 +74,9 @@ export default function MembershipForm() {
         ...f,
         experience: f.experience.filter((r) => r.institution || r.period || r.designation),
       };
-      await api.submitMembership(payload);
+      const res = await api.submitMembership(payload);
+      setCertRef(res.certificate_ref || "");
       setState("done");
-      window.scrollTo({ top: document.getElementById("apply").offsetTop - 80, behavior: "smooth" });
     } catch (e2) {
       setErr(e2.message);
       setState("error");
@@ -85,11 +97,21 @@ export default function MembershipForm() {
           Your membership application has been submitted to the Karnataka State Library Association.
           The office will review it and get in touch about the enrolment fee and next steps.
         </p>
+        {certRef && (
+          <p className="certref" style={{ marginTop: 16 }}>
+            Your reference code: <b>{certRef}</b>
+            <br />
+            Save this — use it on the{" "}
+            <a href="/certificate">certificate lookup page</a> to check your status and view your
+            certificate once approved.
+          </p>
+        )}
         <div className="sign" style={{ marginTop: 20 }}>
           <button
             className="btn btn--ghost"
             onClick={() => {
               setF(empty);
+              setCertRef("");
               setState("idle");
             }}
           >
@@ -100,8 +122,52 @@ export default function MembershipForm() {
     );
   }
 
+  if (state === "preview" || state === "sending" || state === "error") {
+    return (
+      <motion.div className="certpreview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <span className="tag">Preview your certificate</span>
+        <h3 style={{ marginTop: 10 }}>Does this look right?</h3>
+        <p style={{ maxWidth: "58ch", margin: "8px 0 20px" }}>
+          This is how your certificate will look once the office reviews and approves your
+          application (membership number and verification date are assigned at that point).
+        </p>
+        <CertificateCanvas
+          variant="draft"
+          layout={layout}
+          data={{
+            name: f.name,
+            membership_type: f.membership_type,
+            membership_no: "(assigned on approval)",
+            verified_date: new Date().toISOString().slice(0, 10),
+          }}
+        />
+        {err && <p className="formnote" style={{ color: "#b3402f", marginTop: 14 }}>{err}</p>}
+        <div className="sign" style={{ marginTop: 20, display: "flex", gap: 12 }}>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => {
+              setErr("");
+              setState("idle");
+            }}
+          >
+            ← Edit details
+          </button>
+          <button
+            type="button"
+            className="btn btn--solid"
+            disabled={state === "sending"}
+            onClick={submit}
+          >
+            {state === "sending" ? "Submitting…" : "Confirm & submit application →"}
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
-    <form className="cform mform" onSubmit={submit}>
+    <form className="cform mform" onSubmit={goToPreview}>
       {/* Membership type */}
       <fieldset className="mfieldset">
         <legend>Membership type</legend>
@@ -245,8 +311,8 @@ export default function MembershipForm() {
 
       {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
 
-      <button type="submit" className="btn btn--solid" disabled={state === "sending"} style={{ alignSelf: "flex-start" }}>
-        {state === "sending" ? "Submitting…" : "Submit application →"}
+      <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
+        Preview certificate →
       </button>
       <p className="formnote">
         Cheque / DD payable to “Karnataka State Library Association”. The office will confirm payment
