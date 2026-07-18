@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api, getToken, setToken, clearToken } from "../lib/api";
 import CertificateCanvas from "../components/CertificateCanvas";
@@ -22,6 +22,8 @@ const PLACEHOLDER_FIELDS = [
 
 const FIELD_LABEL = { x: "X %", y: "Top %", width: "Width %", height: "Height %", fontSize: "Font size" };
 
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
 /* ---------------------------------------------------- certificate layout */
 function CertificateLayout() {
   const [layout, setLayout] = useState(null);
@@ -29,6 +31,8 @@ function CertificateLayout() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const stageRef = useRef(null);
+  const dragRef = useRef(null);
 
   useEffect(() => {
     api
@@ -48,6 +52,48 @@ function CertificateLayout() {
     }));
   }
 
+  function patch(key, next) {
+    setSaved(false);
+    setLayout((l) => ({ ...l, [key]: { ...l[key], ...next } }));
+  }
+
+  function onDragMove(e) {
+    const d = dragRef.current;
+    if (!d) return;
+    const dxFrac = (e.clientX - d.startX) / d.rect.width;
+    const dyFrac = (e.clientY - d.startY) / d.rect.height;
+    if (d.mode === "move") {
+      patch(d.key, { x: clamp01(d.start.x + dxFrac), y: clamp01(d.start.y + dyFrac) });
+    } else {
+      patch(d.key, {
+        width: Math.max(0.08, d.start.width + dxFrac),
+        height: Math.max(0.03, (d.start.height ?? 0.1) + dyFrac),
+      });
+    }
+  }
+
+  function onDragEnd() {
+    dragRef.current = null;
+    window.removeEventListener("pointermove", onDragMove);
+    window.removeEventListener("pointerup", onDragEnd);
+  }
+
+  function beginDrag(e, key, mode) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!stageRef.current) return;
+    dragRef.current = {
+      key,
+      mode,
+      rect: stageRef.current.getBoundingClientRect(),
+      start: { ...layout[key] },
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", onDragEnd);
+  }
+
   async function save() {
     setSaving(true);
     setError("");
@@ -63,10 +109,13 @@ function CertificateLayout() {
 
   if (!layout) return <p className="formnote" style={{ padding: "24px 8px" }}>Loading layout…</p>;
 
+  const body = layout.body;
+
   return (
     <div className="certlayout">
       <div className="certlayout__grid">
         <div className="certlayout__fields">
+          <p className="formnote">Drag the markers on the preview to reposition, or fine-tune with numbers below.</p>
           {PLACEHOLDER_FIELDS.map((pf) => (
             <fieldset className="mfieldset" key={pf.key}>
               <legend>{pf.label}</legend>
@@ -102,7 +151,42 @@ function CertificateLayout() {
         </div>
 
         <div className="certlayout__preview">
-          <CertificateCanvas variant={variant} layout={layout} data={SAMPLE_DATA} />
+          <div className="certlayout__stage" ref={stageRef}>
+            <CertificateCanvas variant={variant} layout={layout} data={SAMPLE_DATA} />
+
+            <div
+              className="certlayout__handle"
+              style={{ left: `${layout.membershipNo.x * 100}%`, top: `${layout.membershipNo.y * 100}%` }}
+              onPointerDown={(e) => beginDrag(e, "membershipNo", "move")}
+            >
+              Membership No.
+            </div>
+
+            <div
+              className="certlayout__handle"
+              style={{ left: `${layout.name.x * 100}%`, top: `${layout.name.y * 100}%` }}
+              onPointerDown={(e) => beginDrag(e, "name", "move")}
+            >
+              Name
+            </div>
+
+            <div
+              className="certlayout__box"
+              style={{
+                left: `${(body.x - body.width / 2) * 100}%`,
+                top: `${body.y * 100}%`,
+                width: `${body.width * 100}%`,
+                height: `${(body.height ?? 0.18) * 100}%`,
+              }}
+              onPointerDown={(e) => beginDrag(e, "body", "move")}
+            >
+              <span className="certlayout__boxlabel">Body paragraph</span>
+              <span
+                className="certlayout__resize"
+                onPointerDown={(e) => beginDrag(e, "body", "resize")}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
