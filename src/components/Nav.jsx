@@ -37,6 +37,7 @@ export default function Nav() {
             <span className="nav__brand-text">
               <b>KALA</b>
               <span>Library Association</span>
+              <span className="nav__brand-reg">Reg. No. 829/88-89</span>
             </span>
           </Link>
 
@@ -50,6 +51,10 @@ export default function Nav() {
               Contact
             </Link>
           </nav>
+
+          <div className="nav__founder">
+            <img src={org.founder} alt="Dr. S. R. Ranganathan" />
+          </div>
 
           <button
             className="nav__burger"

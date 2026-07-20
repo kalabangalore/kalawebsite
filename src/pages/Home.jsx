@@ -82,16 +82,6 @@ function Hero() {
         >
           Karnataka State Library Association{" "}(R)
         </motion.h1>
-
-        <motion.div
-          className="hero__founder"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <img src={org.founder} alt="Dr. S. R. Ranganathan" />
-          <span className="frame" />
-        </motion.div>
       </div>
 
       <div className="wrap">
