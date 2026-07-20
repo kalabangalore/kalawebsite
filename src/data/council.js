@@ -10,7 +10,7 @@ export const council = [
   {
     role: "Vice Presidents",
     name: "Dr. Nagappa V Bakkannanavar",
-    img: "/avatar-placeholder.svg",
+    img: "/council/nagappa-bakkannanavar.jpeg",
     detail:
       "Branch Head, Information Resource Centre, Tata Consultancy Services, Pioneer Building, International Tech Park, Padandhur Agrahara, Whitefield Road Bangalore-66",
     email: "",
@@ -19,7 +19,7 @@ export const council = [
   {
     role: "Vice Presidents",
     name: "Dr. Subhash Reddy B",
-    img: "/avatar-placeholder.svg",
+    img: "/council/subhash-reddy-b.jpg",
     detail:
       "Librarian, PES University, 100 Feet Ring Road, BSK III Stage, BANGALORE - 560085",
     email: "subhashreddy2005@gmail.com",
@@ -37,7 +37,7 @@ export const council = [
   {
     role: "Secretaries",
     name: "Dr. Rupesh Kumar A\nJoint Secretary",
-    img: "/avatar-placeholder.svg",
+    img: "/council/rupesh-kumar-a.jpg",
     detail:
       "Associate Professor , Department of Studies and Research in Library and Information Science, Tumkur University, Tumkur - 572103",
     email: "a.rupeshkumar@gmail.com",
@@ -46,7 +46,7 @@ export const council = [
   {
     role: "Secretaries",
     name: "Dr. Yacob Johnson\nJoint Secretary",
-    img: "/avatar-placeholder.svg",
+    img: "/council/yacob-johnson.jpg",
     detail:
       "Head & Senior Library Information Officer, Communication Training Institute, Air Force Station, Jallhalli West, Bengaluru – 560015",
     email: "yacobjohnson2005@gmail.com",
@@ -55,7 +55,7 @@ export const council = [
   {
     role: "Treasurer",
     name: "Dr. Meeramani N",
-    img: "/avatar-placeholder.svg",
+    img: "/council/meeramani-n.jpeg",
     detail:
       "Librarian, Knowledge Campus, Jain (Deemed-to-be University), Jayanagar 9 Block, Bengaluru - 560069",
     email: "meeraanand@hotmail.com",
@@ -64,7 +64,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Dr. Kotreshappa Angadi A G",
-    img: "/avatar-placeholder.svg",
+    img: "/council/kotreshappa-angadi.jpg",
     detail:
       "Deputy Librarian, M S Ramaiah Institute of Technology (Autonomous), MSRIT Post, Bangalore-54.",
     email: "kotresha.kotreshappa@gmail.com",
