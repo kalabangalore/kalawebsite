@@ -36,30 +36,29 @@ function FounderMedia() {
           </button>
         </motion.div>
       ) : (
-        <motion.button
+        <motion.div
           key="photo"
-          type="button"
-          className="founder-photo"
-          onClick={() => setPlaying(true)}
-          aria-label="Play the film about Dr. S. R. Ranganathan"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <img src={org.founder} alt="Dr. S. R. Ranganathan" />
-          <span className="founder-play" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="26" height="26">
-              <path d="M8 5v14l11-7z" fill="currentColor" />
-            </svg>
-          </span>
-          <span className="frame" />
-          <span className="plate">
-            <span className="plate__name">Dr. S. R. Ranganathan</span>
-            <span className="plate__role">Father of Library Science, India</span>
-            <span className="plate__sub">Founder of Karnataka State Library Association</span>
-          </span>
-        </motion.button>
+          <button
+            type="button"
+            className="founder-photo"
+            onClick={() => setPlaying(true)}
+            aria-label="Play the film about Dr. S. R. Ranganathan"
+          >
+            <img src={org.founder} alt="Dr. S. R. Ranganathan" />
+            <span className="frame" />
+            <span className="plate">
+              <span className="plate__name">Dr. S. R. Ranganathan</span>
+              <span className="plate__role">Father of Library Science, India</span>
+              <span className="plate__sub">Founder of Karnataka State Library Association</span>
+            </span>
+          </button>
+          <p className="founder-cta">▶ Click the photo to listen to the speaker</p>
+        </motion.div>
       )}
     </AnimatePresence>
   );
@@ -75,22 +74,13 @@ function Hero() {
   return (
     <section className="hero">
       <div className="hero__top wrap">
-        <motion.img
-          className="hero__logo"
-          src={org.logo}
-          alt="KALA logo"
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        />
-
         <motion.h1
           className="hero__heading"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          Karnataka State Library Association (R)
+          Karnataka State Library Association{" "}(R)
         </motion.h1>
 
         <motion.div
