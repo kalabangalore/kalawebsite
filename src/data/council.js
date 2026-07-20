@@ -10,7 +10,7 @@ export const council = [
   {
     role: "Vice Presidents",
     name: "Dr. Nagappa V Bakkannanavar",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1734262616.jpeg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Branch Head, Information Resource Centre, Tata Consultancy Services, Pioneer Building, International Tech Park, Padandhur Agrahara, Whitefield Road Bangalore-66",
     email: "",
@@ -19,7 +19,7 @@ export const council = [
   {
     role: "Vice Presidents",
     name: "Dr. Subhash Reddy B",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1637226997.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Librarian, PES University, 100 Feet Ring Road, BSK III Stage, BANGALORE - 560085",
     email: "subhashreddy2005@gmail.com",
@@ -37,7 +37,7 @@ export const council = [
   {
     role: "Secretaries",
     name: "Dr. Rupesh Kumar A\nJoint Secretary",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1722959609.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Associate Professor , Department of Studies and Research in Library and Information Science, Tumkur University, Tumkur - 572103",
     email: "a.rupeshkumar@gmail.com",
@@ -46,7 +46,7 @@ export const council = [
   {
     role: "Secretaries",
     name: "Dr. Yacob Johnson\nJoint Secretary",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1735819009.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Head & Senior Library Information Officer, Communication Training Institute, Air Force Station, Jallhalli West, Bengaluru – 560015",
     email: "yacobjohnson2005@gmail.com",
@@ -55,7 +55,7 @@ export const council = [
   {
     role: "Treasurer",
     name: "Dr. Meeramani N",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1706068754.jpeg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Librarian, Knowledge Campus, Jain (Deemed-to-be University), Jayanagar 9 Block, Bengaluru - 560069",
     email: "meeraanand@hotmail.com",
@@ -64,7 +64,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Dr. Kotreshappa Angadi A G",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/member_logo_1710572532.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Deputy Librarian, M S Ramaiah Institute of Technology (Autonomous), MSRIT Post, Bangalore-54.",
     email: "kotresha.kotreshappa@gmail.com",
@@ -73,7 +73,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Ambaligi R G",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/noimages.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Central Library, Shri BM Patil Medical College,, Solapur Road, Bijapur- 586103",
     email: "",
@@ -82,7 +82,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Ambika Devi",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/noimages.jpg",
+    img: "/avatar-placeholder.svg",
     detail: "Archaeological Survey of India, Mysore",
     email: "",
     phone: "",
@@ -90,7 +90,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Ananda H",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/noimages.jpg",
+    img: "/avatar-placeholder.svg",
     detail:
       "Harishala (V), Chikkapaylugurki (P),, Chikkaballapur (T & D), Pin:562101",
     email: "",
@@ -99,7 +99,7 @@ export const council = [
   {
     role: "Governing Members",
     name: "Anil Kumar R",
-    img: "https://kalaonline.com/web-admin/uploads/images/member_logo/noimages.jpg",
+    img: "/avatar-placeholder.svg",
     detail: "# 41 Desigowdandoddi,, Ramanagram Tq & Dist PIN:562159",
     email: "",
     phone: "",

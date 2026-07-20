@@ -4,7 +4,7 @@ export const org = {
   name: "Karnataka State Library Association",
   short: "KALA",
   tagline: "Carrying forward the science of the library, since the days of Ranganathan.",
-  logo: "https://kalaonline.com/web-admin/uploads/company/cmsn_1761820139.png",
+  logo: "/logo.png",
   founder: "/founderphoto.png",
   phone: "+91 80 2698 5493",
   altPhone: "+91 93803 71629",
@@ -24,17 +24,17 @@ export const heroSlides = [
 
 export const banners = [
   {
-    img: "https://kalaonline.com/web-admin/uploads/images/banner/banner_1733309452.jpg",
+    img: "/banners/nlw-team.jpg",
     title: "KALA New Team",
     kicker: "2024 — 2026",
   },
   {
-    img: "https://kalaonline.com/web-admin/uploads/images/banner/banner_1733580739.jpg",
+    img: "/banners/nlw-tumakuru.jpg",
     title: "National Library Week 2024 · Tumakuru",
     kicker: "Field meet",
   },
   {
-    img: "https://kalaonline.com/web-admin/uploads/images/banner/banner_1733581319.jpg",
+    img: "/banners/nlw-ieee.jpg",
     title: "National Library Week 2024 · IEEE",
     kicker: "Partner session",
   },
@@ -121,7 +121,7 @@ export const blog = [
     slug: "icrl-2026",
     title: "International Conference on Readers are Leaders (ICRL-2026)",
     excerpt: "All Leaders are Readers — KALA's flagship international gathering returns in 2026.",
-    img: "https://kalaonline.com/web-admin/uploads/images/blogs/blog_1762317878.jpg",
+    img: "/carousel/1.jpeg",
     date: "2026",
     body: [
       "All Leaders are Readers. The International Conference on Readers are Leaders (ICRL-2026) brings together library and information professionals, researchers and educators to examine the place of reading and libraries in shaping leadership and society.",
@@ -132,7 +132,7 @@ export const blog = [
     slug: "nlw-2025",
     title: "National Library Week 2025",
     excerpt: "A week of talks, field meets and partner sessions across Karnataka's institutions.",
-    img: "https://kalaonline.com/web-admin/uploads/images/blogs/blog_1762317266.jpg",
+    img: "/banners/nlw-tumakuru.jpg",
     date: "November 2025",
     body: [
       "National Library Week 2025 (NLW-2025) is observed across host institutions in Karnataka through a series of talks, field meets and partner sessions — see the Activities page for the full schedule and registration links.",
