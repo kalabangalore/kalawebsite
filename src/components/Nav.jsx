@@ -18,6 +18,8 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const loc = useLocation();
+  const isHome = loc.pathname === "/";
+  const heroNav = isHome && !scrolled;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -30,15 +32,11 @@ export default function Nav() {
 
   return (
     <>
-      <header className={`nav ${scrolled ? "nav--scrolled" : ""}`}>
+      <header className={`nav ${scrolled ? "nav--scrolled" : ""} ${heroNav ? "nav--hero" : ""}`}>
         <div className="nav__inner">
           <Link to="/" className="nav__brand" aria-label="KALA home">
-            <img src={org.logo} alt="" />
-            <span className="nav__brand-text">
-              <b>KALA</b>
-              <span>Library Association</span>
-              <span className="nav__brand-reg">Reg. No. 829/88-89</span>
-            </span>
+            <img src={org.logo} alt="KALA" />
+            <span className="nav__brand-reg">Reg. No. 829/88-89</span>
           </Link>
 
           <nav className="nav__links">
