@@ -24,7 +24,6 @@ const empty = {
   qual_academic: "",
   qual_professional: "",
   qual_others: "",
-  experience: Array.from({ length: 5 }, () => ({ institution: "", period: "", designation: "" })),
   inst_address: "",
   inst_contact_person: "",
   inst_designation: "",
@@ -52,13 +51,6 @@ export default function MembershipForm() {
   }, []);
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
-  const setExp = (i, k) => (e) =>
-    setF((p) => {
-      const experience = p.experience.map((row, idx) =>
-        idx === i ? { ...row, [k]: e.target.value } : row
-      );
-      return { ...p, experience };
-    });
 
   function goToPreview(e) {
     e.preventDefault();
@@ -70,11 +62,7 @@ export default function MembershipForm() {
     setState("sending");
     setErr("");
     try {
-      const payload = {
-        ...f,
-        experience: f.experience.filter((r) => r.institution || r.period || r.designation),
-      };
-      const res = await api.submitMembership(payload);
+      const res = await api.submitMembership(f);
       setCertRef(res.certificate_ref || "");
       setState("done");
     } catch (e2) {
@@ -256,27 +244,6 @@ export default function MembershipForm() {
         <Field label="Others" full>
           <input value={f.qual_others} onChange={set("qual_others")} />
         </Field>
-      </fieldset>
-
-      {/* Experience */}
-      <fieldset className="mfieldset">
-        <legend>Experience</legend>
-        <div className="exptable">
-          <div className="exptable__head">
-            <span>#</span>
-            <span>Institution</span>
-            <span>Period</span>
-            <span>Designation</span>
-          </div>
-          {f.experience.map((row, i) => (
-            <div className="exptable__row" key={i}>
-              <span className="exptable__n">{i + 1}</span>
-              <input value={row.institution} onChange={setExp(i, "institution")} placeholder="Institution" />
-              <input value={row.period} onChange={setExp(i, "period")} placeholder="e.g. 2018–2022" />
-              <input value={row.designation} onChange={setExp(i, "designation")} placeholder="Role" />
-            </div>
-          ))}
-        </div>
       </fieldset>
 
       {/* Institutional fields */}

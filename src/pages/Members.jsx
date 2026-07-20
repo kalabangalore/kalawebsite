@@ -12,11 +12,7 @@ export default function Members() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return members;
-    return members.filter(
-      (m) =>
-        m.name.toLowerCase().includes(term) ||
-        (m.detail && m.detail.toLowerCase().includes(term))
-    );
+    return members.filter((m) => m.name.toLowerCase().includes(term));
   }, [q]);
 
   const shown = filtered.slice(0, limit);
@@ -26,7 +22,7 @@ export default function Members() {
       <PageHead
         crumb={<span>Members</span>}
         title="The membership roll"
-        lead="More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name or institution."
+        lead="More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name."
       />
 
       <section className="section paper-bg">
@@ -41,7 +37,7 @@ export default function Members() {
                   setQ(e.target.value);
                   setLimit(STEP);
                 }}
-                placeholder="Search members or institutions…"
+                placeholder="Search members by name…"
                 aria-label="Search members"
               />
             </label>
@@ -70,7 +66,7 @@ export default function Members() {
 
           {shown.length === 0 && (
             <p className="lead" style={{ marginTop: 30 }}>
-              No members match “{q}”. Try a different name or institution.
+              No members match “{q}”. Try a different name.
             </p>
           )}
 

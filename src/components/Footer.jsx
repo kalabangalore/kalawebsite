@@ -48,12 +48,12 @@ export function Footer() {
             <Link to="/members">Members</Link>
             <Link to="/membership">Membership</Link>
             <Link to="/certificate">Find my certificate</Link>
-            <Link to="/blog">Blog</Link>
-            <Link to="/whats-new">What's New</Link>
+            <Link to="/blog">News and Views</Link>
+            <Link to="/whats-new">Notifications</Link>
           </div>
           <div className="footer__col">
             <h4>Contact</h4>
-            <a href={`tel:${org.phone.replace(/\s/g, "")}`}>{org.phone}</a>
+            <a href={`tel:${org.altPhone.replace(/\s/g, "")}`}>{org.altPhone}</a>
             <a href={`mailto:${org.email}`}>{org.email}</a>
             <Link to="/contact">Send a message</Link>
           </div>

@@ -251,16 +251,6 @@ function Detail({ m, onClose, onChange, onDelete }) {
           {row("Academic", m.qual_academic)}
           {row("Professional", m.qual_professional)}
           {row("Other quals", m.qual_others)}
-          {m.experience?.length > 0 && (
-            <div className="drow drow--block">
-              <span>Experience</span>
-              <div>
-                {m.experience.map((x, i) => (
-                  <div key={i} className="expitem">{[x.institution, x.period, x.designation].filter(Boolean).join(" — ")}</div>
-                ))}
-              </div>
-            </div>
-          )}
           {m.membership_type === "institutional" && (
             <>
               {row("Institution", m.inst_address)}

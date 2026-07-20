@@ -6,7 +6,6 @@ export const org = {
   tagline: "Carrying forward the science of the library, since the days of Ranganathan.",
   logo: "/logo.png",
   founder: "/founderphoto.png",
-  phone: "+91 80 2698 5493",
   altPhone: "+91 93803 71629",
   email: "karnatakalibraryassociation@gmail.com",
   address:

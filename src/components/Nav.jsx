@@ -10,8 +10,8 @@ const LINKS = [
   { to: "/members", label: "Members" },
   { to: "/membership", label: "Membership" },
   { to: "/activities", label: "Activities" },
-  { to: "/blog", label: "Blog" },
-  { to: "/whats-new", label: "What's New" },
+  { to: "/blog", label: "News and Views" },
+  { to: "/whats-new", label: "Notifications" },
 ];
 
 export default function Nav() {

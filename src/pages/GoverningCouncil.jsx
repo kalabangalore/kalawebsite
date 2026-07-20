@@ -16,7 +16,7 @@ export default function GoverningCouncil() {
     <>
       <PageHead
         crumb={<span>Governing Council</span>}
-        title="The Governing Council"
+        title="The Executive Councils"
         lead="The office bearers who steer the Association for the 2024–2026 term."
       />
 

@@ -27,8 +27,6 @@ export default function Contact() {
                 <div className="k">Phone</div>
                 <div className="v">
                   <a href={`tel:${org.altPhone.replace(/\s/g, "")}`}>{org.altPhone}</a>
-                  {" · "}
-                  <a href={`tel:${org.phone.replace(/\s/g, "")}`}>{org.phone}</a>
                 </div>
               </li>
               <li>
