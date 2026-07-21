@@ -9,7 +9,7 @@ export default function Blog() {
     <>
       <PageHead
         crumb={<span>Blog</span>}
-        title="News & writing"
+        title="News and Views"
         lead="Notes from the Association — conferences, library weeks, and the ideas that move the profession forward."
       />
 

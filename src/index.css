@@ -266,7 +266,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
    Slide strip (banners) under hero
    ============================================================ */
 .slidestrip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
-.slidestrip__item { position: relative; aspect-ratio: 4/3; overflow: hidden; }
+.slidestrip__item { position: relative; aspect-ratio: 4/3; overflow: hidden; cursor: pointer; }
 .slidestrip__item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
 .slidestrip__item:hover img { transform: scale(1.06); }
 .slidestrip__item::after { content:""; position:absolute; inset:0; background: linear-gradient(180deg, transparent 40%, rgba(15,31,27,0.9)); }
@@ -274,6 +274,22 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .slidestrip__cap .k { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brass-soft); }
 .slidestrip__cap .t { font-family: var(--primary); font-size: 19px; margin-top: 4px; }
 @media (max-width: 760px) { .slidestrip { grid-template-columns: 1fr; } }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px; cursor: zoom-out;
+}
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius); cursor: default; }
+.lightbox__close {
+  position: absolute; top: 20px; right: 24px; z-index: 1;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(244, 240, 230, 0.1); color: var(--text);
+  font-size: 26px; line-height: 1; transition: background 0.2s;
+}
+.lightbox__close:hover { background: rgba(244, 240, 230, 0.2); }
 
 /* ============================================================
    Stats

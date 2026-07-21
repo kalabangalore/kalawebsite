@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
+import Lightbox from "../components/Lightbox";
 import { org, banners, heroSlides, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
 
@@ -107,6 +108,8 @@ function Hero() {
 }
 
 export default function Home() {
+  const [lightbox, setLightbox] = useState(null);
+
   return (
     <>
       <Hero />
@@ -234,7 +237,12 @@ export default function Home() {
         <div style={{ marginTop: 48 }}>
           <Stagger className="slidestrip">
             {banners.map((b) => (
-              <motion.div className="slidestrip__item" variants={stagItem} key={b.title}>
+              <motion.div
+                className="slidestrip__item"
+                variants={stagItem}
+                key={b.title}
+                onClick={() => setLightbox({ src: b.img, alt: b.title })}
+              >
                 <img src={b.img} alt={b.title} loading="lazy" />
                 <div className="slidestrip__cap">
                   <div className="k">{b.kicker}</div>
@@ -245,6 +253,8 @@ export default function Home() {
           </Stagger>
         </div>
       </section>
+
+      <Lightbox image={lightbox} onClose={() => setLightbox(null)} />
     </>
   );
 }
