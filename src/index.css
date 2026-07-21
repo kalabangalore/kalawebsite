@@ -577,6 +577,12 @@ h3 { font-family: var(--primary); font-weight: 600; }
 
 .typepick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 560px) { .typepick { grid-template-columns: 1fr; } }
+
+.paydetails { display: flex; gap: 24px; align-items: flex-start; padding: 18px; background: var(--paper-2); border: 1px solid var(--line-dark); border-radius: var(--radius); }
+.paydetails__label { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass); margin-bottom: 8px; }
+.paydetails p { font-size: 14.5px; line-height: 1.7; color: var(--text-dark); }
+.paydetails__qr { flex: none; width: 130px; height: 130px; object-fit: contain; background: #fff; border-radius: var(--radius); border: 1px solid var(--line-dark); }
+@media (max-width: 560px) { .paydetails { flex-direction: column; } .paydetails__qr { width: 150px; height: 150px; align-self: center; } }
 .typecard {
   position: relative; display: flex; flex-direction: column; gap: 4px;
   padding: 18px; border: 1px solid var(--line); border-radius: var(--radius);

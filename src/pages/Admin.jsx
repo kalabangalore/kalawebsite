@@ -259,6 +259,14 @@ function Detail({ m, onClose, onChange, onDelete }) {
               {row("Inst. telephone", m.inst_telephone)}
             </>
           )}
+          {m.payment_receipt_url ? (
+            <div className="drow">
+              <span>Payment receipt</span>
+              <a href={m.payment_receipt_url} target="_blank" rel="noreferrer">View uploaded receipt →</a>
+            </div>
+          ) : (
+            row("Payment receipt", "Not on file")
+          )}
           {row("Reference code", m.certificate_ref)}
           {row("Membership No.", m.membership_no)}
           {row("Verified date", m.verified_date)}

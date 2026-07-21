@@ -39,12 +39,17 @@ function Field({ label, children, full }) {
   );
 }
 
+const MAX_RECEIPT_BYTES = 1024 * 1024;
+
 export default function MembershipForm() {
   const [f, setF] = useState(empty);
   const [state, setState] = useState("idle"); // idle | preview | sending | done | error
   const [err, setErr] = useState("");
   const [certRef, setCertRef] = useState("");
   const [layout, setLayout] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [receiptName, setReceiptName] = useState("");
+  const [receiptErr, setReceiptErr] = useState("");
 
   useEffect(() => {
     api.getCertificateLayout().then(setLayout).catch(() => {});
@@ -52,8 +57,36 @@ export default function MembershipForm() {
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
 
+  function onReceiptChange(e) {
+    const file = e.target.files?.[0];
+    setReceiptErr("");
+    setReceipt(null);
+    setReceiptName("");
+    if (!file) return;
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setReceiptErr("Please upload an image or PDF.");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      setReceiptErr("File must be 1 MB or smaller.");
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceipt({ fileBase64: reader.result.split(",")[1], mimeType: file.type, fileName: file.name });
+      setReceiptName(file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
   function goToPreview(e) {
     e.preventDefault();
+    if (!receipt) {
+      setReceiptErr("Please attach your payment receipt to continue.");
+      return;
+    }
     setState("preview");
     window.scrollTo({ top: document.getElementById("apply").offsetTop - 80, behavior: "smooth" });
   }
@@ -62,7 +95,7 @@ export default function MembershipForm() {
     setState("sending");
     setErr("");
     try {
-      const res = await api.submitMembership(f);
+      const res = await api.submitMembership({ ...f, receipt });
       setCertRef(res.certificate_ref || "");
       setState("done");
     } catch (e2) {
@@ -100,6 +133,8 @@ export default function MembershipForm() {
             onClick={() => {
               setF(empty);
               setCertRef("");
+              setReceipt(null);
+              setReceiptName("");
               setState("idle");
             }}
           >
@@ -276,15 +311,39 @@ export default function MembershipForm() {
         )}
       </AnimatePresence>
 
+      {/* Payment */}
+      <fieldset className="mfieldset">
+        <legend>Payment</legend>
+        <div className="paydetails">
+          <div>
+            <div className="paydetails__label">Bank details</div>
+            <p>
+              <b>Account name:</b> Karnataka State Library Association
+              <br />
+              <b>Bank:</b> Canara Bank, Vijayanagar Branch
+              <br />
+              <b>A/c No.:</b> 1146101024883
+              <br />
+              <b>IFSC:</b> CNRB0001146
+            </p>
+            <p className="formnote">OR scan the QR code and pay via GPay / PhonePe / Paytm.</p>
+          </div>
+          <img className="paydetails__qr" src="/payment-qr.png" alt="Scan to pay via UPI" />
+        </div>
+
+        <Field label="Payment receipt (GPay / PhonePe / Paytm) *" full>
+          <input type="file" accept="image/*,.pdf" onChange={onReceiptChange} />
+          <p className="formnote">Upload 1 file: PDF or image. Max 1 MB.</p>
+          {receiptName && <p className="formnote" style={{ color: "var(--brass-soft)" }}>Attached: {receiptName}</p>}
+          {receiptErr && <p className="formnote" style={{ color: "#b3402f" }}>{receiptErr}</p>}
+        </Field>
+      </fieldset>
+
       {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
 
       <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
         Preview certificate →
       </button>
-      <p className="formnote">
-        Cheque / DD payable to “Karnataka State Library Association”. The office will confirm payment
-        details after reviewing your application.
-      </p>
     </form>
   );
 }

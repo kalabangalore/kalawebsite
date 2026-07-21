@@ -8,7 +8,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+// Payment receipts arrive base64-encoded in the JSON body (~1.37x their
+// raw size), so the default 1mb limit isn't enough for a ~1MB upload.
+app.use(express.json({ limit: "3mb" }));
 
 // Ensure the schema exists. Cached so it runs once per warm instance
 // (works for both the local server and Vercel serverless cold starts).
@@ -44,6 +46,26 @@ function pick(body, allowed) {
 
 const rowToMember = (r) => r; // experience comes back as parsed JSON from pg
 
+// Forwards a base64 payment receipt to the Apps Script webhook (see
+// scripts/payment-receipt-apps-script.gs), which saves it to Drive and
+// logs a row in Sheets. We only ever store the returned link — never the
+// file itself — so Postgres storage doesn't grow with uploads.
+async function uploadReceipt(receipt, meta) {
+  const url = process.env.APPS_SCRIPT_URL;
+  if (!url) {
+    console.warn("APPS_SCRIPT_URL not set — skipping receipt upload");
+    return null;
+  }
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...receipt, ...meta }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Receipt upload failed");
+  return data.url;
+}
+
 function auth(req, res, next) {
   const h = req.headers.authorization || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : null;
@@ -66,9 +88,27 @@ app.post("/api/membership", async (req, res) => {
     if (!req.body?.name?.trim()) {
       return res.status(400).json({ error: "Name is required" });
     }
+
+    let receiptUrl = null;
+    if (req.body.receipt) {
+      try {
+        receiptUrl = await uploadReceipt(req.body.receipt, {
+          name: req.body.name,
+          email: req.body.email,
+          mobile: req.body.mobile,
+          membershipType: req.body.membership_type,
+        });
+      } catch (err) {
+        // Don't lose the whole application over an upload hiccup — the
+        // office can chase the receipt separately if this happens.
+        console.error("receipt upload error:", err.message);
+      }
+    }
+
     const { cols, vals } = pick(req.body, WRITABLE);
-    cols.push("status", "source", "certificate_ref");
-    vals.push("pending", "form", genCertRef());
+    cols.push("status", "source", "certificate_ref", "payment_receipt_url");
+    const certRefIdx = vals.length + 2; // index of certificate_ref within vals, after the two pushes below
+    vals.push("pending", "form", genCertRef(), receiptUrl);
     const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
 
     // Retry a couple of times in the astronomically unlikely event of a
@@ -82,7 +122,7 @@ app.post("/api/membership", async (req, res) => {
         return res.status(201).json({ ok: true, id: rows[0].id, certificate_ref: rows[0].certificate_ref });
       } catch (err) {
         if (err.code === "23505" && attempt < 4) {
-          vals[vals.length - 1] = genCertRef();
+          vals[certRefIdx] = genCertRef();
           continue;
         }
         throw err;
