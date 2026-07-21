@@ -5,7 +5,7 @@ import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import { org, banners, heroSlides, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
 
-const officers = council.filter((c) => c.role !== "Governing Members");
+const officers = council.filter((c) => c.role !== "Governing Council Members");
 
 // Founder portrait that swaps to a video on click, and back again.
 function FounderMedia() {

@@ -4,7 +4,7 @@ import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
 import { council } from "../data/council";
 
-const ORDER = ["President", "Vice Presidents", "Secretaries", "Treasurer", "Governing Members", "Governing Council Members"];
+const ORDER = ["President", "Vice Presidents", "Secretaries", "Treasurer", "Governing Council Members"];
 
 export default function GoverningCouncil() {
   const groups = ORDER.map((role) => ({

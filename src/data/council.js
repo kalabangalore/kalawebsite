@@ -62,49 +62,6 @@ export const council = [
     phone: "9845500343",
   },
   {
-    role: "Governing Members",
-    name: "Dr. Kotreshappa Angadi A G",
-    img: "/council/kotreshappa-angadi.jpg",
-    detail:
-      "Deputy Librarian, M S Ramaiah Institute of Technology (Autonomous), MSRIT Post, Bangalore-54.",
-    email: "kotresha.kotreshappa@gmail.com",
-    phone: "",
-  },
-  {
-    role: "Governing Members",
-    name: "Ambaligi R G",
-    img: "/avatar-placeholder.svg",
-    detail:
-      "Central Library, Shri BM Patil Medical College,, Solapur Road, Bijapur- 586103",
-    email: "",
-    phone: "",
-  },
-  {
-    role: "Governing Members",
-    name: "Ambika Devi",
-    img: "/avatar-placeholder.svg",
-    detail: "Archaeological Survey of India, Mysore",
-    email: "",
-    phone: "",
-  },
-  {
-    role: "Governing Members",
-    name: "Ananda H",
-    img: "/avatar-placeholder.svg",
-    detail:
-      "Harishala (V), Chikkapaylugurki (P),, Chikkaballapur (T & D), Pin:562101",
-    email: "",
-    phone: "",
-  },
-  {
-    role: "Governing Members",
-    name: "Anil Kumar R",
-    img: "/avatar-placeholder.svg",
-    detail: "# 41 Desigowdandoddi,, Ramanagram Tq & Dist PIN:562159",
-    email: "",
-    phone: "",
-  },
-  {
     role: "Governing Council Members",
     name: "Dr. Prakash I N",
     img: "/governing-council/prakash-in.jpg",
