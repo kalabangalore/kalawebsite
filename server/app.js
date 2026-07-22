@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import { q, initSchema, WRITABLE, ADMIN_WRITABLE } from "./db.js";
 import { DEFAULT_LAYOUT, genCertRef, genMembershipNo } from "./certificate.js";
 
@@ -46,24 +47,46 @@ function pick(body, allowed) {
 
 const rowToMember = (r) => r; // experience comes back as parsed JSON from pg
 
-// Forwards a base64 payment receipt to the Apps Script webhook (see
-// scripts/payment-receipt-apps-script.gs), which saves it to Drive and
-// logs a row in Sheets. We only ever store the returned link — never the
-// file itself — so Postgres storage doesn't grow with uploads.
-async function uploadReceipt(receipt, meta) {
-  const url = process.env.APPS_SCRIPT_URL;
-  if (!url) {
-    console.warn("APPS_SCRIPT_URL not set — skipping receipt upload");
-    return null;
+// Emails a base64 payment receipt (as an attachment) via Gmail SMTP, using
+// an App Password rather than OAuth. We never persist the file anywhere
+// ourselves — it just lives in the destination inbox — so Postgres storage
+// doesn't grow with uploads.
+let mailer = null;
+function getMailer() {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return null;
+  if (!mailer) {
+    mailer = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+    });
   }
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...receipt, ...meta }),
+  return mailer;
+}
+
+async function emailReceipt(receipt, meta) {
+  const transport = getMailer();
+  if (!transport) {
+    console.warn("GMAIL_USER/GMAIL_APP_PASSWORD not set — skipping receipt email");
+    return false;
+  }
+  await transport.sendMail({
+    from: process.env.GMAIL_USER,
+    to: process.env.RECEIPT_EMAIL_TO || process.env.GMAIL_USER,
+    subject: `Payment receipt — ${meta.name} (${meta.membershipType})`,
+    text: [
+      "New membership payment receipt.",
+      "",
+      `Name: ${meta.name}`,
+      `Email: ${meta.email || "-"}`,
+      `Mobile: ${meta.mobile || "-"}`,
+      `Membership type: ${meta.membershipType}`,
+      `Reference code: ${meta.certificateRef}`,
+    ].join("\n"),
+    attachments: [
+      { filename: receipt.fileName || "receipt", content: Buffer.from(receipt.fileBase64, "base64"), contentType: receipt.mimeType },
+    ],
   });
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "Receipt upload failed");
-  return data.url;
+  return true;
 }
 
 function auth(req, res, next) {
@@ -89,26 +112,29 @@ app.post("/api/membership", async (req, res) => {
       return res.status(400).json({ error: "Name is required" });
     }
 
-    let receiptUrl = null;
+    const certRef = genCertRef();
+
+    let receiptEmailed = false;
     if (req.body.receipt) {
       try {
-        receiptUrl = await uploadReceipt(req.body.receipt, {
+        receiptEmailed = await emailReceipt(req.body.receipt, {
           name: req.body.name,
           email: req.body.email,
           mobile: req.body.mobile,
           membershipType: req.body.membership_type,
+          certificateRef: certRef,
         });
       } catch (err) {
-        // Don't lose the whole application over an upload hiccup — the
+        // Don't lose the whole application over an email hiccup — the
         // office can chase the receipt separately if this happens.
-        console.error("receipt upload error:", err.message);
+        console.error("receipt email error:", err.message);
       }
     }
 
     const { cols, vals } = pick(req.body, WRITABLE);
-    cols.push("status", "source", "certificate_ref", "payment_receipt_url");
+    cols.push("status", "source", "certificate_ref", "receipt_emailed");
     const certRefIdx = vals.length + 2; // index of certificate_ref within vals, after the two pushes below
-    vals.push("pending", "form", genCertRef(), receiptUrl);
+    vals.push("pending", "form", certRef, receiptEmailed);
     const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
 
     // Retry a couple of times in the astronomically unlikely event of a

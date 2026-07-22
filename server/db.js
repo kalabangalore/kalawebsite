@@ -74,7 +74,12 @@ export async function initSchema() {
   await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS verified_date TEXT;`);
   // Link to the payment receipt file, stored in Drive (via the Apps Script
   // webhook) rather than in Postgres, so uploads don't bloat the DB.
+  // Superseded by receipt_emailed below (receipts are emailed, not
+  // uploaded to Drive), but kept for any rows that already used it.
   await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS payment_receipt_url TEXT;`);
+  // Whether the payment receipt was successfully emailed (Gmail SMTP) at
+  // submission time — the file itself lives in that inbox, never in Postgres.
+  await q(`ALTER TABLE members ADD COLUMN IF NOT EXISTS receipt_emailed BOOLEAN NOT NULL DEFAULT false;`);
 
   await q(`CREATE INDEX IF NOT EXISTS members_status_idx ON members (status);`);
   await q(`CREATE INDEX IF NOT EXISTS members_created_idx ON members (created_at DESC);`);
@@ -126,4 +131,5 @@ export const ADMIN_WRITABLE = [
   "membership_no",
   "verified_date",
   "payment_receipt_url",
+  "receipt_emailed",
 ];

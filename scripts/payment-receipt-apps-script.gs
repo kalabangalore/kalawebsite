@@ -29,7 +29,15 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["Submitted", "Name", "Email", "Mobile", "Membership type", "Certificate ref", "Receipt link"]);
+      sheet.appendRow([
+        "Submitted",
+        "Name",
+        "Email",
+        "Mobile",
+        "Membership type",
+        "Certificate ref",
+        "Receipt link",
+      ]);
     }
     sheet.appendRow([
       new Date(),
@@ -42,11 +50,11 @@ function doPost(e) {
     ]);
 
     return ContentService.createTextOutput(
-      JSON.stringify({ ok: true, url: file.getUrl() })
+      JSON.stringify({ ok: true, url: file.getUrl() }),
     ).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(
-      JSON.stringify({ ok: false, error: err.message })
+      JSON.stringify({ ok: false, error: err.message }),
     ).setMimeType(ContentService.MimeType.JSON);
   }
 }
