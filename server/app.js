@@ -89,6 +89,43 @@ async function emailReceipt(receipt, meta) {
   return true;
 }
 
+// Sends the applicant a thank-you email with their uploaded receipt and a
+// preview of their (unsigned, draft) certificate attached, for their own
+// records. Silently skipped if they didn't give an email address, or if
+// Gmail isn't configured.
+async function emailApplicant(receipt, certificatePreview, meta) {
+  if (!meta.email) return false;
+  const transport = getMailer();
+  if (!transport) return false;
+
+  const attachments = [];
+  if (receipt) {
+    attachments.push({ filename: receipt.fileName || "receipt", content: Buffer.from(receipt.fileBase64, "base64"), contentType: receipt.mimeType });
+  }
+  if (certificatePreview) {
+    attachments.push({ filename: "certificate-preview.png", content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certificatePreview.mimeType || "image/png" });
+  }
+
+  await transport.sendMail({
+    from: process.env.GMAIL_USER,
+    to: meta.email,
+    subject: "Thank you for applying to KALA",
+    text: [
+      `Thank you, ${meta.name}, for filling out the Karnataka State Library Association membership form.`,
+      "",
+      "Your application has been received and is being reviewed by the office. We've attached a copy of " +
+        "your payment receipt and a preview of your certificate for your records — the membership number " +
+        "and verification date shown will be filled in once your application is approved.",
+      "",
+      `Your reference code: ${meta.certificateRef}`,
+      "Save this to check your status and view your final certificate later at: " +
+        `${process.env.SITE_URL || "https://kalaonline.com"}/certificate`,
+    ].join("\n"),
+    attachments,
+  });
+  return true;
+}
+
 function auth(req, res, next) {
   const h = req.headers.authorization || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : null;
@@ -114,22 +151,31 @@ app.post("/api/membership", async (req, res) => {
 
     const certRef = genCertRef();
 
-    let receiptEmailed = false;
-    if (req.body.receipt) {
-      try {
-        receiptEmailed = await emailReceipt(req.body.receipt, {
-          name: req.body.name,
-          email: req.body.email,
-          mobile: req.body.mobile,
-          membershipType: req.body.membership_type,
-          certificateRef: certRef,
-        });
-      } catch (err) {
-        // Don't lose the whole application over an email hiccup — the
-        // office can chase the receipt separately if this happens.
-        console.error("receipt email error:", err.message);
-      }
-    }
+    const meta = {
+      name: req.body.name,
+      email: req.body.email,
+      mobile: req.body.mobile,
+      membershipType: req.body.membership_type,
+      certificateRef: certRef,
+    };
+
+    // Send both emails concurrently rather than one after another — each
+    // Gmail SMTP round trip takes several seconds, and this whole step has
+    // to finish inside a single serverless request/response cycle.
+    const [receiptResult] = await Promise.all([
+      req.body.receipt
+        ? emailReceipt(req.body.receipt, meta).catch((err) => {
+            // Don't lose the whole application over an email hiccup — the
+            // office can chase the receipt separately if this happens.
+            console.error("receipt email error:", err.message);
+            return false;
+          })
+        : Promise.resolve(false),
+      emailApplicant(req.body.receipt, req.body.certificatePreview, meta).catch((err) => {
+        console.error("applicant email error:", err.message);
+      }),
+    ]);
+    const receiptEmailed = receiptResult;
 
     const { cols, vals } = pick(req.body, WRITABLE);
     cols.push("status", "source", "certificate_ref", "receipt_emailed");

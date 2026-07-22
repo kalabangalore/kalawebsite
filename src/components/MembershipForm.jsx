@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../lib/api";
 import CertificateCanvas from "./CertificateCanvas";
@@ -50,12 +50,20 @@ export default function MembershipForm() {
   const [receipt, setReceipt] = useState(null);
   const [receiptName, setReceiptName] = useState("");
   const [receiptErr, setReceiptErr] = useState("");
+  const certWrapRef = useRef(null);
 
   useEffect(() => {
     api.getCertificateLayout().then(setLayout).catch(() => {});
   }, []);
 
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+
+  const previewData = {
+    name: f.name,
+    membership_type: f.membership_type,
+    membership_no: "(assigned on approval)",
+    verified_date: new Date().toISOString().slice(0, 10),
+  };
 
   function onReceiptChange(e) {
     const file = e.target.files?.[0];
@@ -95,7 +103,11 @@ export default function MembershipForm() {
     setState("sending");
     setErr("");
     try {
-      const res = await api.submitMembership({ ...f, receipt });
+      const canvas = certWrapRef.current?.querySelector("canvas");
+      const certificatePreview = canvas
+        ? { fileBase64: canvas.toDataURL("image/png").split(",")[1], mimeType: "image/png" }
+        : null;
+      const res = await api.submitMembership({ ...f, receipt, certificatePreview });
       setCertRef(res.certificate_ref || "");
       setState("done");
     } catch (e2) {
@@ -154,16 +166,9 @@ export default function MembershipForm() {
           This is how your certificate will look once the office reviews and approves your
           application (membership number and verification date are assigned at that point).
         </p>
-        <CertificateCanvas
-          variant="draft"
-          layout={layout}
-          data={{
-            name: f.name,
-            membership_type: f.membership_type,
-            membership_no: "(assigned on approval)",
-            verified_date: new Date().toISOString().slice(0, 10),
-          }}
-        />
+        <div ref={certWrapRef}>
+          <CertificateCanvas variant="draft" layout={layout} data={previewData} />
+        </div>
         {err && <p className="formnote" style={{ color: "#b3402f", marginTop: 14 }}>{err}</p>}
         <div className="sign" style={{ marginTop: 20, display: "flex", gap: 12 }}>
           <button
@@ -190,6 +195,7 @@ export default function MembershipForm() {
   }
 
   return (
+    <div className="mform-layout">
     <form className="cform mform" onSubmit={goToPreview}>
       {/* Membership type */}
       <fieldset className="mfieldset">
@@ -345,5 +351,17 @@ export default function MembershipForm() {
         Preview certificate →
       </button>
     </form>
+
+    <aside className="mform-live">
+      <div className="mform-live__sticky">
+        <span className="tag">Live preview</span>
+        <CertificateCanvas variant="draft" layout={layout} data={previewData} />
+        <p className="formnote" style={{ marginTop: 10 }}>
+          Updates as you fill in your name and membership type. Membership number and verification
+          date are assigned once the office approves your application.
+        </p>
+      </div>
+    </aside>
+    </div>
   );
 }

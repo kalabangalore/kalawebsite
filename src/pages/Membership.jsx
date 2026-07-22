@@ -48,7 +48,7 @@ export default function Membership() {
       </section>
 
       <section className="section" id="apply" style={{ background: "var(--ink)" }}>
-        <div className="wrap" style={{ maxWidth: 880 }}>
+        <div className="wrap">
           <Reveal>
             <span className="eyebrow">Membership form</span>
             <h2 className="section-title" style={{ color: "var(--text)" }}>
