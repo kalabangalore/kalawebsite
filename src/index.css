@@ -722,6 +722,22 @@ h3 { font-family: var(--primary); font-weight: 600; }
 }
 .certlayout__handle:active { cursor: grabbing; }
 
+.certlayout__pending {
+  display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start;
+  padding: 20px; margin-bottom: 8px; border: 1px solid var(--brass); border-radius: var(--radius);
+  background: rgba(194, 135, 63, 0.08);
+}
+.certlayout__pending-info { display: flex; flex-direction: column; gap: 4px; }
+.certlayout__pending-title {
+  font-family: var(--secondary); font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--brass-soft);
+}
+.certlayout__stage--pending { opacity: 0.96; }
+.certlayout__stage--pending .certlayout__handle { cursor: default; }
+@media (max-width: 960px) {
+  .certlayout__pending { grid-template-columns: 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

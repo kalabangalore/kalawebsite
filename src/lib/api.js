@@ -52,6 +52,13 @@ export const api = {
   getCertificateLayout: () => request("/certificate/layout"),
   updateCertificateLayout: (body) =>
     request("/admin/certificate/layout", { method: "PUT", body, auth: true }),
+  proposeCertificateLayout: (body) =>
+    request("/certificate/layout/propose", { method: "POST", body }),
+  getPendingCertificateLayout: () => request("/admin/certificate/layout/pending", { auth: true }),
+  approvePendingCertificateLayout: () =>
+    request("/admin/certificate/layout/approve", { method: "POST", auth: true }),
+  discardPendingCertificateLayout: () =>
+    request("/admin/certificate/layout/pending", { method: "DELETE", auth: true }),
   lookupCertificate: (ref) =>
     request(`/certificate/lookup?ref=${encodeURIComponent(ref)}`),
 };

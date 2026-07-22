@@ -88,28 +88,80 @@ async function emailNotification(receipt, certificatePreview, meta) {
     attachments.push({ filename: "certificate-preview.png", content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certificatePreview.mimeType || "image/png" });
   }
 
+  const esc = (s) =>
+    String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const row = (label, value) =>
+    `<tr><td style="padding:6px 0;color:#5c6f66;font-size:13px;width:150px;vertical-align:top;">${label}</td>` +
+    `<td style="padding:6px 0;color:#1a2a25;font-size:14px;font-weight:600;">${value}</td></tr>`;
+
+  const html = `
+<div style="background:#e9e4d8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#f4f0e6;border-radius:6px;overflow:hidden;border:1px solid #d8cdb5;">
+    <tr>
+      <td style="background:#0f1f1b;padding:28px 32px;text-align:center;">
+        <div style="color:#f4f0e6;font-size:20px;font-weight:700;letter-spacing:0.02em;">KARNATAKA STATE LIBRARY ASSOCIATION</div>
+        <div style="color:#d9a960;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;margin-top:6px;">Reg. No. 829/88-89</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <div style="color:#c2873f;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;margin-bottom:10px;">Membership application received</div>
+        <p style="color:#1a2a25;font-size:15px;line-height:1.7;margin:0 0 16px;">
+          Thank you for applying to the Karnataka State Library Association, <b>${esc(meta.name)}</b>.
+        </p>
+        <p style="color:#5c6f66;font-size:14px;line-height:1.7;margin:0 0 20px;">
+          Your application has been received and is under review. Attached is a copy of your payment
+          receipt and a preview of your certificate for your records — the membership number and
+          verification date shown will be filled in once the application is approved.
+        </p>
+        <table role="presentation" width="100%" style="border-top:1px solid #d8cdb5;border-bottom:1px solid #d8cdb5;margin-bottom:20px;">
+          ${row("Name", esc(meta.name))}
+          ${row("Email", esc(meta.email) || "—")}
+          ${row("Mobile", esc(meta.mobile) || "—")}
+          ${row("Membership type", esc(meta.membershipType))}
+          ${row("Reference code", esc(meta.certificateRef))}
+        </table>
+        <p style="color:#5c6f66;font-size:13.5px;line-height:1.7;margin:0;">
+          Save your reference code — use it at
+          <a href="${siteUrl}/certificate" style="color:#9a6a28;">${siteUrl}/certificate</a>
+          to check your status or view your final certificate once approved.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0f1f1b;padding:16px 32px;text-align:center;color:#9db5a8;font-size:11px;letter-spacing:0.06em;">
+        Karnataka State Library Association (R) · karnatakalibraryassociation@gmail.com
+      </td>
+    </tr>
+  </table>
+</div>`;
+
+  const text = [
+    `Thank you for applying to the Karnataka State Library Association, ${meta.name}.`,
+    "",
+    "Your membership application has been received and is under review. Attached is a copy of your " +
+      "payment receipt and a preview of your certificate for your records — the membership number and " +
+      "verification date shown will be filled in once the application is approved.",
+    "",
+    "Application details:",
+    `Name: ${meta.name}`,
+    `Email: ${meta.email || "-"}`,
+    `Mobile: ${meta.mobile || "-"}`,
+    `Membership type: ${meta.membershipType}`,
+    `Reference code: ${meta.certificateRef}`,
+    "",
+    `Use the reference code above to check your status or view your final certificate later at: ${siteUrl}/certificate`,
+  ].join("\n");
+
   await transport.sendMail({
-    from: process.env.GMAIL_USER,
+    from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
     to,
     cc,
     subject: `KALA membership application received — ${meta.name}`,
-    text: [
-      `Thank you for applying to the Karnataka State Library Association, ${meta.name}.`,
-      "",
-      "Your membership application has been received and is under review. Attached is a copy of your " +
-        "payment receipt and a preview of your certificate for your records — the membership number and " +
-        "verification date shown will be filled in once the application is approved.",
-      "",
-      "Application details:",
-      `Name: ${meta.name}`,
-      `Email: ${meta.email || "-"}`,
-      `Mobile: ${meta.mobile || "-"}`,
-      `Membership type: ${meta.membershipType}`,
-      `Reference code: ${meta.certificateRef}`,
-      "",
-      "Use the reference code above to check your status or view your final certificate later at: " +
-        `${process.env.SITE_URL || "https://kalaonline.com"}/certificate`,
-    ].join("\n"),
+    text,
+    html,
     attachments,
   });
   return true;
@@ -190,6 +242,25 @@ app.post("/api/membership", async (req, res) => {
 app.get("/api/certificate/layout", async (_req, res) => {
   const { rows } = await q(`SELECT value FROM settings WHERE key = 'certificate_layout'`);
   res.json(rows[0]?.value || DEFAULT_LAYOUT);
+});
+
+// Public: someone filling the membership form nudged the placeholder
+// positions in their live preview. This never touches the live layout —
+// it just parks a suggestion for the office to review and approve (or
+// discard) from the admin panel. Only one pending suggestion is kept at
+// a time; a newer one replaces an unreviewed older one.
+app.post("/api/certificate/layout/propose", async (req, res) => {
+  try {
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('certificate_layout_pending', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(req.body)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("layout propose error:", err.message);
+    res.status(500).json({ error: "Could not save suggestion" });
+  }
 });
 
 // Public: look up a member's certificate by their reference code.
@@ -334,6 +405,38 @@ app.put("/api/admin/certificate/layout", auth, async (req, res) => {
     console.error("layout update error:", err.message);
     res.status(500).json({ error: "Could not save layout" });
   }
+});
+
+// Admin: read the pending layout suggestion (if any) proposed from the
+// public form's live preview.
+app.get("/api/admin/certificate/layout/pending", auth, async (_req, res) => {
+  const { rows } = await q(`SELECT value, updated_at FROM settings WHERE key = 'certificate_layout_pending'`);
+  res.json(rows[0] ? { layout: rows[0].value, proposedAt: rows[0].updated_at } : null);
+});
+
+// Admin: approve the pending suggestion — it becomes the live layout,
+// and the suggestion slot is cleared.
+app.post("/api/admin/certificate/layout/approve", auth, async (_req, res) => {
+  try {
+    const { rows } = await q(`SELECT value FROM settings WHERE key = 'certificate_layout_pending'`);
+    if (!rows.length) return res.status(404).json({ error: "No pending suggestion" });
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('certificate_layout', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(rows[0].value)]
+    );
+    await q(`DELETE FROM settings WHERE key = 'certificate_layout_pending'`);
+    res.json({ ok: true, layout: rows[0].value });
+  } catch (err) {
+    console.error("layout approve error:", err.message);
+    res.status(500).json({ error: "Could not approve suggestion" });
+  }
+});
+
+// Admin: discard the pending suggestion without applying it.
+app.delete("/api/admin/certificate/layout/pending", auth, async (_req, res) => {
+  await q(`DELETE FROM settings WHERE key = 'certificate_layout_pending'`);
+  res.json({ ok: true });
 });
 
 app.delete("/api/admin/members/:id", auth, async (req, res) => {

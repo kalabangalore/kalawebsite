@@ -33,12 +33,51 @@ function CertificateLayout() {
   const stageRef = useRef(null);
   const dragRef = useRef(null);
 
+  const [pending, setPending] = useState(null);
+  const [pendingError, setPendingError] = useState("");
+  const [reviewing, setReviewing] = useState(false);
+
   useEffect(() => {
     api
       .getCertificateLayout()
       .then((l) => setLayout({ ...DEFAULT_LAYOUT, ...l }))
       .catch((e) => setError(e.message));
+    loadPending();
   }, []);
+
+  function loadPending() {
+    api
+      .getPendingCertificateLayout()
+      .then((p) => setPending(p ? { ...DEFAULT_LAYOUT, ...p.layout, __proposedAt: p.proposedAt } : null))
+      .catch(() => {});
+  }
+
+  async function approvePending() {
+    setReviewing(true);
+    setPendingError("");
+    try {
+      const res = await api.approvePendingCertificateLayout();
+      setLayout({ ...DEFAULT_LAYOUT, ...res.layout });
+      setPending(null);
+    } catch (e) {
+      setPendingError(e.message);
+    } finally {
+      setReviewing(false);
+    }
+  }
+
+  async function discardPending() {
+    setReviewing(true);
+    setPendingError("");
+    try {
+      await api.discardPendingCertificateLayout();
+      setPending(null);
+    } catch (e) {
+      setPendingError(e.message);
+    } finally {
+      setReviewing(false);
+    }
+  }
 
   function update(key, field, value) {
     setSaved(false);
@@ -102,6 +141,43 @@ function CertificateLayout() {
 
   return (
     <div className="certlayout">
+      {pending && (
+        <div className="certlayout__pending">
+          <div className="certlayout__pending-info">
+            <div className="certlayout__pending-title">Layout suggestion from a member's application</div>
+            <p className="formnote">
+              An applicant nudged the placeholder positions while filling out the form
+              {pending.__proposedAt ? ` on ${new Date(pending.__proposedAt).toLocaleString()}` : ""}. Approve to
+              make this the live layout, or discard to keep the current one.
+            </p>
+            {pendingError && <p className="formnote" style={{ color: "#b3402f" }}>{pendingError}</p>}
+            <div className="row2" style={{ marginTop: 8 }}>
+              <button className="btn btn--solid" disabled={reviewing} onClick={approvePending}>
+                {reviewing ? "Working…" : "Approve as final"}
+              </button>
+              <button className="btn" disabled={reviewing} onClick={discardPending}>
+                Discard
+              </button>
+            </div>
+          </div>
+          <div className="certlayout__stage certlayout__stage--pending">
+            <CertificateCanvas variant={variant} layout={pending} data={SAMPLE_DATA} />
+            <div
+              className="certlayout__handle"
+              style={{ left: `${pending.membershipNo.x * 100}%`, top: `${pending.membershipNo.y * 100}%` }}
+            >
+              Membership No.
+            </div>
+            <div
+              className="certlayout__handle"
+              style={{ left: `${pending.name.x * 100}%`, top: `${pending.name.y * 100}%` }}
+            >
+              Name
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="certlayout__grid">
         <div className="certlayout__fields">
           <p className="formnote">Drag the markers on the preview to reposition, or fine-tune with numbers below.</p>

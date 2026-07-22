@@ -39,6 +39,35 @@ function Field({ label, children, full }) {
   );
 }
 
+// Certificate preview with draggable "Membership No." / "Name" markers —
+// dragging only ever adjusts local state (see beginDrag in the parent);
+// it's proposed to the office for review on submit, never applied live.
+function DraggableCert({ variant, layout, data, onDrag, stageRef }) {
+  return (
+    <div className="certlayout__stage" ref={stageRef}>
+      <CertificateCanvas variant={variant} layout={layout} data={data} />
+      {layout && (
+        <>
+          <div
+            className="certlayout__handle"
+            style={{ left: `${layout.membershipNo.x * 100}%`, top: `${layout.membershipNo.y * 100}%` }}
+            onPointerDown={(e) => onDrag(e, "membershipNo")}
+          >
+            Membership No.
+          </div>
+          <div
+            className="certlayout__handle"
+            style={{ left: `${layout.name.x * 100}%`, top: `${layout.name.y * 100}%` }}
+            onPointerDown={(e) => onDrag(e, "name")}
+          >
+            Name
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 const MAX_RECEIPT_BYTES = 1024 * 1024;
 
 export default function MembershipForm() {
@@ -50,7 +79,9 @@ export default function MembershipForm() {
   const [receipt, setReceipt] = useState(null);
   const [receiptName, setReceiptName] = useState("");
   const [receiptErr, setReceiptErr] = useState("");
+  const [layoutOverride, setLayoutOverride] = useState(null);
   const certWrapRef = useRef(null);
+  const dragRef = useRef(null);
 
   useEffect(() => {
     api.getCertificateLayout().then(setLayout).catch(() => {});
@@ -64,6 +95,48 @@ export default function MembershipForm() {
     membership_no: "(assigned on approval)",
     verified_date: new Date().toISOString().slice(0, 10),
   };
+  const effectiveLayout = layoutOverride || layout;
+
+  function onDragMove(e) {
+    const d = dragRef.current;
+    if (!d || !layout) return;
+    const dxFrac = (e.clientX - d.startX) / d.rect.width;
+    const dyFrac = (e.clientY - d.startY) / d.rect.height;
+    setLayoutOverride((prev) => {
+      const base = prev || layout;
+      return {
+        ...base,
+        [d.key]: {
+          ...base[d.key],
+          x: Math.min(1, Math.max(0, d.start.x + dxFrac)),
+          y: Math.min(1, Math.max(0, d.start.y + dyFrac)),
+        },
+      };
+    });
+  }
+
+  function onDragEnd() {
+    dragRef.current = null;
+    window.removeEventListener("pointermove", onDragMove);
+    window.removeEventListener("pointerup", onDragEnd);
+  }
+
+  function beginDrag(e, key) {
+    e.preventDefault();
+    e.stopPropagation();
+    const stage = e.currentTarget.closest(".certlayout__stage");
+    if (!stage || !layout) return;
+    const base = layoutOverride || layout;
+    dragRef.current = {
+      key,
+      rect: stage.getBoundingClientRect(),
+      start: { ...base[key] },
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", onDragEnd);
+  }
 
   function onReceiptChange(e) {
     const file = e.target.files?.[0];
@@ -103,6 +176,9 @@ export default function MembershipForm() {
     setState("sending");
     setErr("");
     try {
+      if (layoutOverride) {
+        api.proposeCertificateLayout(layoutOverride).catch(() => {});
+      }
       const canvas = certWrapRef.current?.querySelector("canvas");
       const certificatePreview = canvas
         ? { fileBase64: canvas.toDataURL("image/png").split(",")[1], mimeType: "image/png" }
@@ -147,6 +223,7 @@ export default function MembershipForm() {
               setCertRef("");
               setReceipt(null);
               setReceiptName("");
+              setLayoutOverride(null);
               setState("idle");
             }}
           >
@@ -166,9 +243,8 @@ export default function MembershipForm() {
           This is how your certificate will look once the office reviews and approves your
           application (membership number and verification date are assigned at that point).
         </p>
-        <div ref={certWrapRef}>
-          <CertificateCanvas variant="draft" layout={layout} data={previewData} />
-        </div>
+        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} stageRef={certWrapRef} />
+        <p className="formnote" style={{ marginTop: 8 }}>Drag "Membership No." or "Name" to nudge their position — sent to the office for review.</p>
         {err && <p className="formnote" style={{ color: "#b3402f", marginTop: 14 }}>{err}</p>}
         <div className="sign" style={{ marginTop: 20, display: "flex", gap: 12 }}>
           <button
@@ -348,17 +424,18 @@ export default function MembershipForm() {
       {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
 
       <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
-        Preview certificate →
+        Submit for membership →
       </button>
     </form>
 
     <aside className="mform-live">
       <div className="mform-live__sticky">
         <span className="tag">Live preview</span>
-        <CertificateCanvas variant="draft" layout={layout} data={previewData} />
+        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} />
         <p className="formnote" style={{ marginTop: 10 }}>
-          Updates as you fill in your name and membership type. Membership number and verification
-          date are assigned once the office approves your application.
+          Updates as you fill in your name and membership type. Drag "Membership No." or "Name" for
+          minor position adjustments — sent to the office for review, never applied automatically.
+          Membership number and verification date are assigned once the office approves your application.
         </p>
       </div>
     </aside>
