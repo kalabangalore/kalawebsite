@@ -583,13 +583,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
    ============================================================ */
 .mform { gap: 28px; }
 
-.mform-layout { display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: start; }
-.mform-live__sticky { position: sticky; top: 24px; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ink-2); }
-@media (max-width: 960px) {
-  .mform-layout { grid-template-columns: 1fr; }
-  .mform-live { order: -1; }
-  .mform-live__sticky { position: static; }
-}
+.mform-live { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ink-2); }
 .mfieldset { border: none; padding: 0; display: flex; flex-direction: column; gap: 16px; }
 .mfieldset legend {
   font-family: var(--secondary); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;

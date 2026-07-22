@@ -271,7 +271,6 @@ export default function MembershipForm() {
   }
 
   return (
-    <div className="mform-layout">
     <form className="cform mform" onSubmit={goToPreview}>
       {/* Membership type */}
       <fieldset className="mfieldset">
@@ -421,15 +420,8 @@ export default function MembershipForm() {
         </Field>
       </fieldset>
 
-      {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
-
-      <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
-        Submit for membership →
-      </button>
-    </form>
-
-    <aside className="mform-live">
-      <div className="mform-live__sticky">
+      {/* Certificate live preview */}
+      <div className="mform-live">
         <span className="tag">Live preview</span>
         <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} />
         <p className="formnote" style={{ marginTop: 10 }}>
@@ -438,7 +430,12 @@ export default function MembershipForm() {
           Membership number and verification date are assigned once the office approves your application.
         </p>
       </div>
-    </aside>
-    </div>
+
+      {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
+
+      <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
+        Submit for membership →
+      </button>
+    </form>
   );
 }
