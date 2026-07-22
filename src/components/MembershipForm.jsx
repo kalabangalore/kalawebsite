@@ -72,7 +72,7 @@ const MAX_RECEIPT_BYTES = 1024 * 1024;
 
 export default function MembershipForm() {
   const [f, setF] = useState(empty);
-  const [state, setState] = useState("idle"); // idle | preview | sending | done | error
+  const [state, setState] = useState("idle"); // idle | sending | done
   const [err, setErr] = useState("");
   const [certRef, setCertRef] = useState("");
   const [layout, setLayout] = useState(null);
@@ -162,17 +162,12 @@ export default function MembershipForm() {
     reader.readAsDataURL(file);
   }
 
-  function goToPreview(e) {
+  async function submit(e) {
     e.preventDefault();
     if (!receipt) {
       setReceiptErr("Please attach your payment receipt to continue.");
       return;
     }
-    setState("preview");
-    window.scrollTo({ top: document.getElementById("apply").offsetTop - 80, behavior: "smooth" });
-  }
-
-  async function submit() {
     setState("sending");
     setErr("");
     try {
@@ -188,7 +183,7 @@ export default function MembershipForm() {
       setState("done");
     } catch (e2) {
       setErr(e2.message);
-      setState("error");
+      setState("idle");
     }
   }
 
@@ -234,44 +229,8 @@ export default function MembershipForm() {
     );
   }
 
-  if (state === "preview" || state === "sending" || state === "error") {
-    return (
-      <motion.div className="certpreview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <span className="tag">Preview your certificate</span>
-        <h3 style={{ marginTop: 10 }}>Does this look right?</h3>
-        <p style={{ maxWidth: "58ch", margin: "8px 0 20px" }}>
-          This is how your certificate will look once the office reviews and approves your
-          application (membership number and verification date are assigned at that point).
-        </p>
-        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} stageRef={certWrapRef} />
-        <p className="formnote" style={{ marginTop: 8 }}>Drag "Membership No." or "Name" to nudge their position — sent to the office for review.</p>
-        {err && <p className="formnote" style={{ color: "#b3402f", marginTop: 14 }}>{err}</p>}
-        <div className="sign" style={{ marginTop: 20, display: "flex", gap: 12 }}>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => {
-              setErr("");
-              setState("idle");
-            }}
-          >
-            ← Edit details
-          </button>
-          <button
-            type="button"
-            className="btn btn--solid"
-            disabled={state === "sending"}
-            onClick={submit}
-          >
-            {state === "sending" ? "Submitting…" : "Confirm & submit application →"}
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
-    <form className="cform mform" onSubmit={goToPreview}>
+    <form className="cform mform" onSubmit={submit}>
       {/* Membership type */}
       <fieldset className="mfieldset">
         <legend>Membership type</legend>
@@ -423,7 +382,7 @@ export default function MembershipForm() {
       {/* Certificate live preview */}
       <div className="mform-live">
         <span className="tag">Live preview</span>
-        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} />
+        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} stageRef={certWrapRef} />
         <p className="formnote" style={{ marginTop: 10 }}>
           Updates as you fill in your name and membership type. Drag "Membership No." or "Name" for
           minor position adjustments — sent to the office for review, never applied automatically.
@@ -433,8 +392,8 @@ export default function MembershipForm() {
 
       {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
 
-      <button type="submit" className="btn btn--solid" style={{ alignSelf: "flex-start" }}>
-        Submit for membership →
+      <button type="submit" className="btn btn--solid" disabled={state === "sending"} style={{ alignSelf: "flex-start" }}>
+        {state === "sending" ? "Submitting…" : "Submit for membership →"}
       </button>
     </form>
   );
