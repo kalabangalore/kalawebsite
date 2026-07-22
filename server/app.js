@@ -63,40 +63,22 @@ function getMailer() {
   return mailer;
 }
 
-async function emailReceipt(receipt, meta) {
+// Sends ONE email covering both audiences — addressed to the applicant
+// (thank-you + their records) and cc'd to the office (for the receipt +
+// their own tracking) — rather than two separate sends. Each Gmail SMTP
+// round trip takes several seconds, and this whole step has to finish
+// inside a single serverless request/response cycle, so one send instead
+// of two meaningfully cuts the risk of hitting a platform timeout.
+async function emailNotification(receipt, certificatePreview, meta) {
   const transport = getMailer();
   if (!transport) {
-    console.warn("GMAIL_USER/GMAIL_APP_PASSWORD not set — skipping receipt email");
+    console.warn("GMAIL_USER/GMAIL_APP_PASSWORD not set — skipping notification email");
     return false;
   }
-  await transport.sendMail({
-    from: process.env.GMAIL_USER,
-    to: process.env.RECEIPT_EMAIL_TO || process.env.GMAIL_USER,
-    subject: `Payment receipt — ${meta.name} (${meta.membershipType})`,
-    text: [
-      "New membership payment receipt.",
-      "",
-      `Name: ${meta.name}`,
-      `Email: ${meta.email || "-"}`,
-      `Mobile: ${meta.mobile || "-"}`,
-      `Membership type: ${meta.membershipType}`,
-      `Reference code: ${meta.certificateRef}`,
-    ].join("\n"),
-    attachments: [
-      { filename: receipt.fileName || "receipt", content: Buffer.from(receipt.fileBase64, "base64"), contentType: receipt.mimeType },
-    ],
-  });
-  return true;
-}
 
-// Sends the applicant a thank-you email with their uploaded receipt and a
-// preview of their (unsigned, draft) certificate attached, for their own
-// records. Silently skipped if they didn't give an email address, or if
-// Gmail isn't configured.
-async function emailApplicant(receipt, certificatePreview, meta) {
-  if (!meta.email) return false;
-  const transport = getMailer();
-  if (!transport) return false;
+  const officeAddr = process.env.RECEIPT_EMAIL_TO || process.env.GMAIL_USER;
+  const to = meta.email || officeAddr;
+  const cc = meta.email ? officeAddr : undefined;
 
   const attachments = [];
   if (receipt) {
@@ -108,17 +90,24 @@ async function emailApplicant(receipt, certificatePreview, meta) {
 
   await transport.sendMail({
     from: process.env.GMAIL_USER,
-    to: meta.email,
-    subject: "Thank you for applying to KALA",
+    to,
+    cc,
+    subject: `KALA membership application received — ${meta.name}`,
     text: [
-      `Thank you, ${meta.name}, for filling out the Karnataka State Library Association membership form.`,
+      `Thank you for applying to the Karnataka State Library Association, ${meta.name}.`,
       "",
-      "Your application has been received and is being reviewed by the office. We've attached a copy of " +
-        "your payment receipt and a preview of your certificate for your records — the membership number " +
-        "and verification date shown will be filled in once your application is approved.",
+      "Your membership application has been received and is under review. Attached is a copy of your " +
+        "payment receipt and a preview of your certificate for your records — the membership number and " +
+        "verification date shown will be filled in once the application is approved.",
       "",
-      `Your reference code: ${meta.certificateRef}`,
-      "Save this to check your status and view your final certificate later at: " +
+      "Application details:",
+      `Name: ${meta.name}`,
+      `Email: ${meta.email || "-"}`,
+      `Mobile: ${meta.mobile || "-"}`,
+      `Membership type: ${meta.membershipType}`,
+      `Reference code: ${meta.certificateRef}`,
+      "",
+      "Use the reference code above to check your status or view your final certificate later at: " +
         `${process.env.SITE_URL || "https://kalaonline.com"}/certificate`,
     ].join("\n"),
     attachments,
@@ -159,23 +148,14 @@ app.post("/api/membership", async (req, res) => {
       certificateRef: certRef,
     };
 
-    // Send both emails concurrently rather than one after another — each
-    // Gmail SMTP round trip takes several seconds, and this whole step has
-    // to finish inside a single serverless request/response cycle.
-    const [receiptResult] = await Promise.all([
-      req.body.receipt
-        ? emailReceipt(req.body.receipt, meta).catch((err) => {
-            // Don't lose the whole application over an email hiccup — the
-            // office can chase the receipt separately if this happens.
-            console.error("receipt email error:", err.message);
-            return false;
-          })
-        : Promise.resolve(false),
-      emailApplicant(req.body.receipt, req.body.certificatePreview, meta).catch((err) => {
-        console.error("applicant email error:", err.message);
-      }),
-    ]);
-    const receiptEmailed = receiptResult;
+    let receiptEmailed = false;
+    try {
+      receiptEmailed = await emailNotification(req.body.receipt, req.body.certificatePreview, meta);
+    } catch (err) {
+      // Don't lose the whole application over an email hiccup — the
+      // office can chase the receipt separately if this happens.
+      console.error("notification email error:", err.message);
+    }
 
     const { cols, vals } = pick(req.body, WRITABLE);
     cols.push("status", "source", "certificate_ref", "receipt_emailed");
