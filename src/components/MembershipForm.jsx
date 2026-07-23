@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../lib/api";
-import CertificateCanvas from "./CertificateCanvas";
+import CertificateCanvas, { canvasToAttachment } from "./CertificateCanvas";
 
 const TYPES = [
   { value: "life", label: "Life", fee: "₹300 / annum" },
@@ -175,9 +175,7 @@ export default function MembershipForm() {
         api.proposeCertificateLayout(layoutOverride).catch(() => {});
       }
       const canvas = certWrapRef.current?.querySelector("canvas");
-      const certificatePreview = canvas
-        ? { fileBase64: canvas.toDataURL("image/png").split(",")[1], mimeType: "image/png" }
-        : null;
+      const certificatePreview = canvas ? canvasToAttachment(canvas) : null;
       const res = await api.submitMembership({ ...f, receipt, certificatePreview });
       setCertRef(res.certificate_ref || "");
       setState("done");

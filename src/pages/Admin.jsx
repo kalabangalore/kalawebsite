@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api, getToken, setToken, clearToken } from "../lib/api";
-import CertificateCanvas from "../components/CertificateCanvas";
+import CertificateCanvas, { canvasToAttachment } from "../components/CertificateCanvas";
 import { DEFAULT_LAYOUT } from "../lib/certificate";
 
 const STATUS_LABEL = { pending: "Pending", active: "Active", rejected: "Rejected" };
@@ -558,6 +558,8 @@ function Dashboard({ onOut }) {
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [certLayout, setCertLayout] = useState(null);
+  const [emailingMember, setEmailingMember] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -580,10 +582,36 @@ function Dashboard({ onOut }) {
   useEffect(() => { load(); }, [load]);
 
   async function change(id, patch) {
+    const prev = members.find((x) => x.id === id) || active;
+    const wasActive = prev?.status === "active";
     const updated = await api.updateMember(id, patch);
     setMembers((ms) => ms.map((m) => (m.id === id ? updated : m)));
     setActive((a) => (a && a.id === id ? updated : a));
     api.stats().then(setStats).catch(() => {});
+
+    // Approving (pending/rejected -> active) issues the certificate — email
+    // it to the member the same way the self-claim flow does.
+    if (patch.status === "active" && !wasActive && updated.email) {
+      if (!certLayout) {
+        try {
+          setCertLayout(await api.getCertificateLayout());
+        } catch {
+          /* fall back to the canvas's own default layout */
+        }
+      }
+      setEmailingMember(updated);
+    }
+  }
+
+  async function handleApprovalCanvasReady(canvas) {
+    if (!emailingMember) return;
+    const member = emailingMember;
+    setEmailingMember(null);
+    try {
+      await api.emailMemberCertificate(member.id, canvasToAttachment(canvas));
+    } catch (e) {
+      console.error("Could not email approval certificate:", e.message);
+    }
   }
   async function remove(id) {
     if (!confirm("Delete this member permanently?")) return;
@@ -672,6 +700,12 @@ function Dashboard({ onOut }) {
         {loading && <p className="formnote" style={{ padding: "24px 8px" }}>Loading…</p>}
       </div>
       </>
+      )}
+
+      {emailingMember && (
+        <div style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}>
+          <CertificateCanvas variant="signed" layout={certLayout} data={emailingMember} onReady={handleApprovalCanvasReady} />
+        </div>
       )}
 
       <AnimatePresence>

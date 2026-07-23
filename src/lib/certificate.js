@@ -6,7 +6,7 @@ export const CANVAS_W = 2210;
 export const CANVAS_H = 1493;
 
 export const DEFAULT_LAYOUT = {
-  membershipNo: { x: 0.655, y: 0.185, fontSize: 34, color: "#1a2a52", align: "left", weight: 700 },
+  membershipNo: { x: 0.655, y: 0.20, fontSize: 28, color: "#1a2a52", align: "left", weight: 700 },
   name: { x: 0.5, y: 0.585, fontSize: 64, color: "#1a2a52", align: "center", weight: 700 },
 };
 

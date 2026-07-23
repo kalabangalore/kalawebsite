@@ -34,6 +34,14 @@ export default function CertificateCanvas({ variant = "draft", layout, data, cla
   );
 }
 
+// JPEG rather than PNG for anything leaving the browser (download, email
+// attachment) — the template is a detailed gradient/photo-like image that
+// PNG compresses poorly, easily exceeding the API's request body limit.
+// JPEG at this quality looks identical for a certificate and is a fraction
+// of the size.
+const EXPORT_TYPE = "image/jpeg";
+const EXPORT_QUALITY = 0.9;
+
 export function downloadCanvas(container, filename) {
   const canvas = container?.querySelector("canvas");
   if (!canvas) return;
@@ -42,8 +50,15 @@ export function downloadCanvas(container, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename || "certificate.png";
+    a.download = filename || "certificate.jpg";
     a.click();
     URL.revokeObjectURL(url);
-  }, "image/png");
+  }, EXPORT_TYPE, EXPORT_QUALITY);
+}
+
+// Returns { fileBase64, mimeType } ready to hand to the API for emailing —
+// same compact JPEG encoding as downloadCanvas.
+export function canvasToAttachment(canvas) {
+  const fileBase64 = canvas.toDataURL(EXPORT_TYPE, EXPORT_QUALITY).split(",")[1];
+  return { fileBase64, mimeType: EXPORT_TYPE };
 }

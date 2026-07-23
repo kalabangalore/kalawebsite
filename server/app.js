@@ -20,6 +20,13 @@ const DEFAULT_SITE_CONTENT = {
 // Fields a self-claiming legacy member may fill in themselves.
 const CLAIM_FIELDS = ["email", "mobile", "date_of_birth", "designation", "membership_type"];
 
+// Certificate images arrive from the browser as JPEG (see canvasToAttachment
+// in CertificateCanvas.jsx) — this keeps the attached filename's extension
+// honest instead of always saying .png.
+function extFor(mimeType) {
+  return mimeType === "image/jpeg" ? "jpg" : "png";
+}
+
 const app = express();
 app.use(cors());
 // Payment receipts arrive base64-encoded in the JSON body (~1.37x their
@@ -98,7 +105,8 @@ async function emailNotification(receipt, certificatePreview, meta) {
     attachments.push({ filename: receipt.fileName || "receipt", content: Buffer.from(receipt.fileBase64, "base64"), contentType: receipt.mimeType });
   }
   if (certificatePreview) {
-    attachments.push({ filename: "certificate-preview.png", content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certificatePreview.mimeType || "image/png" });
+    const mimeType = certificatePreview.mimeType || "image/png";
+    attachments.push({ filename: `certificate-preview.${extFor(mimeType)}`, content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: mimeType });
   }
 
   const esc = (s) =>
@@ -187,8 +195,9 @@ async function emailCertificate(member, certificatePreview) {
   if (!transport || !member.email) return false;
 
   const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const certMime = certificatePreview?.mimeType || "image/png";
   const attachments = certificatePreview
-    ? [{ filename: "certificate.png", content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certificatePreview.mimeType || "image/png" }]
+    ? [{ filename: `certificate.${extFor(certMime)}`, content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certMime }]
     : [];
 
   const html = `
@@ -703,6 +712,20 @@ app.put("/api/admin/site-content", auth, async (req, res) => {
   } catch (err) {
     console.error("site content update error:", err.message);
     res.status(500).json({ error: "Could not save site content" });
+  }
+});
+
+// Admin: email a member's (client-rendered) certificate to them — used right
+// after approving an application, and available for a manual resend.
+app.post("/api/admin/members/:id/email-certificate", auth, async (req, res) => {
+  try {
+    const { rows } = await q("SELECT * FROM members WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+    const sent = await emailCertificate(rows[0], req.body.certificatePreview);
+    res.json({ ok: true, emailed: sent });
+  } catch (err) {
+    console.error("admin email certificate error:", err.message);
+    res.status(500).json({ error: "Could not email the certificate" });
   }
 });
 

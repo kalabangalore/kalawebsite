@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
-import CertificateCanvas, { downloadCanvas } from "../components/CertificateCanvas";
+import CertificateCanvas, { downloadCanvas, canvasToAttachment } from "../components/CertificateCanvas";
 
 const TYPES = [
   { value: "life", label: "Life" },
@@ -169,8 +169,7 @@ export default function LegacyMemberAccess() {
     emailedRef.current = true;
     setEmailStatus("sending");
     try {
-      const fileBase64 = canvas.toDataURL("image/png").split(",")[1];
-      const res = await api.emailLegacyCertificate(entry.id, { fileBase64, mimeType: "image/png" });
+      const res = await api.emailLegacyCertificate(entry.id, canvasToAttachment(canvas));
       setEmailStatus(res.emailed ? "sent" : "failed");
     } catch {
       setEmailStatus("failed");
@@ -183,8 +182,7 @@ export default function LegacyMemberAccess() {
     if (!canvas) return;
     setEmailStatus("sending");
     try {
-      const fileBase64 = canvas.toDataURL("image/png").split(",")[1];
-      const res = await api.emailLegacyCertificate(entry.id, { fileBase64, mimeType: "image/png" });
+      const res = await api.emailLegacyCertificate(entry.id, canvasToAttachment(canvas));
       setEmailStatus(res.emailed ? "sent" : "failed");
     } catch {
       setEmailStatus("failed");

@@ -3,7 +3,7 @@ import crypto from "crypto";
 // Default placeholder layout for the certificate template (2210x1493 canvas).
 // x/y are fractions of the canvas width/height.
 export const DEFAULT_LAYOUT = {
-  membershipNo: { x: 0.655, y: 0.185, fontSize: 34, color: "#1a2a52", align: "left", weight: 700 },
+  membershipNo: { x: 0.655, y: 0.20, fontSize: 28, color: "#1a2a52", align: "left", weight: 700 },
   name: { x: 0.5, y: 0.585, fontSize: 64, color: "#1a2a52", align: "center", weight: 700 },
 };
 

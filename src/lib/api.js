@@ -48,6 +48,8 @@ export const api = {
   updateMember: (id, body) =>
     request(`/admin/members/${id}`, { method: "PATCH", body, auth: true }),
   deleteMember: (id) => request(`/admin/members/${id}`, { method: "DELETE", auth: true }),
+  emailMemberCertificate: (id, certificatePreview) =>
+    request(`/admin/members/${id}/email-certificate`, { method: "POST", body: { certificatePreview }, auth: true }),
 
   getCertificateLayout: () => request("/certificate/layout"),
   updateCertificateLayout: (body) =>
