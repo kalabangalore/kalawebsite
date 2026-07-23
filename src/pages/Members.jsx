@@ -12,10 +12,12 @@ export default function Members() {
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(STEP);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setErr("");
     const t = setTimeout(() => {
       api
         .listLegacyMembers({ q, limit })
@@ -25,8 +27,10 @@ export default function Members() {
           setTotal(res.total);
           setLoading(false);
         })
-        .catch(() => {
-          if (alive) setLoading(false);
+        .catch((e) => {
+          if (!alive) return;
+          setErr(e.message || "Could not load the members list. Please try again.");
+          setLoading(false);
         });
     }, 250);
     return () => {
@@ -91,7 +95,11 @@ export default function Members() {
             ))}
           </div>
 
-          {!loading && items.length === 0 && (
+          {err && (
+            <p className="formnote" style={{ color: "#b3402f", marginTop: 30 }}>{err}</p>
+          )}
+
+          {!loading && !err && items.length === 0 && (
             <p className="lead" style={{ marginTop: 30 }}>
               No members match “{q}”. Try a different name.
             </p>

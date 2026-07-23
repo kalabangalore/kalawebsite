@@ -205,6 +205,25 @@ export default function LegacyMemberAccess() {
 
   const d = (k) => (e) => setDetails((p) => ({ ...p, [k]: e.target.value }));
 
+  const previewData = entry && {
+    name: entry.name,
+    membership_type: details.membership_type,
+    membership_no: "(shown once you finish)",
+    verified_date: new Date().toISOString().slice(0, 10),
+  };
+
+  function Preview() {
+    if (!previewData) return null;
+    return (
+      <div className="mform-live" style={{ marginBottom: 24 }}>
+        <span className="tag">Certificate preview</span>
+        <div style={{ marginTop: 12 }}>
+          <CertificateCanvas variant="draft" layout={layout} data={previewData} />
+        </div>
+      </div>
+    );
+  }
+
   if (step === "result" && member) {
     return (
       <div className="notice" style={{ textAlign: "left" }}>
@@ -237,16 +256,18 @@ export default function LegacyMemberAccess() {
   }
 
   return (
-    <div className="cform" style={{ maxWidth: 520 }}>
+    <div style={{ maxWidth: entry ? 640 : 520 }}>
       {step === "pick" && (
-        <>
+        <div className="cform">
           <p className="formnote">Find your name on the roster to log in.</p>
           <NamePicker onPick={pick} />
-        </>
+        </div>
       )}
 
+      {step !== "pick" && <Preview />}
+
       {step === "pin-setup" && entry && (
-        <form onSubmit={submitSetPin}>
+        <form className="cform" onSubmit={submitSetPin}>
           <p className="formnote">
             Hi {entry.name.split(" ")[0]} — set a 4-6 digit PIN. You'll use it to log back in and
             view your certificate later.
@@ -286,7 +307,7 @@ export default function LegacyMemberAccess() {
       )}
 
       {step === "pin-login" && entry && (
-        <form onSubmit={submitLogin}>
+        <form className="cform" onSubmit={submitLogin}>
           <p className="formnote">Welcome back, {entry.name.split(" ")[0]}. Enter your PIN.</p>
           <div className="field">
             <label>PIN</label>
@@ -312,7 +333,7 @@ export default function LegacyMemberAccess() {
       )}
 
       {step === "details" && entry && (
-        <form onSubmit={submitDetails}>
+        <form className="cform" onSubmit={submitDetails}>
           <p className="formnote">
             Almost done, {entry.name.split(" ")[0]}. Fill in a few details — your certificate will be
             issued and emailed to you immediately.
