@@ -204,8 +204,8 @@ async function emailCertificate(member, certificatePreview) {
       <td style="padding:32px;">
         <div style="color:#c2873f;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;margin-bottom:10px;">Your membership certificate</div>
         <p style="color:#1a2a25;font-size:15px;line-height:1.7;margin:0 0 16px;">
-          Welcome back to the Karnataka State Library Association, <b>${member.name}</b>. Your
-          certificate is attached to this email.
+          Hello <b>${member.name}</b>, here is your certificate for the Karnataka State Library
+          Association — attached to this email as an image (PNG).
         </p>
         <table role="presentation" width="100%" style="border-top:1px solid #d8cdb5;border-bottom:1px solid #d8cdb5;margin-bottom:20px;">
           <tr><td style="padding:6px 0;color:#5c6f66;font-size:13px;width:150px;">Membership No.</td><td style="padding:6px 0;color:#1a2a25;font-size:14px;font-weight:600;">${member.membership_no || "—"}</td></tr>
@@ -227,7 +227,8 @@ async function emailCertificate(member, certificatePreview) {
 </div>`;
 
   const text = [
-    `Welcome back to the Karnataka State Library Association, ${member.name}.`,
+    `Hello ${member.name}, here is your certificate for the Karnataka State Library Association —`,
+    "attached to this email as an image (PNG).",
     "",
     `Membership No.: ${member.membership_no || "-"}`,
     `Reference code: ${member.certificate_ref}`,
@@ -238,7 +239,7 @@ async function emailCertificate(member, certificatePreview) {
   await transport.sendMail({
     from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
     to: member.email,
-    subject: "Your KALA membership certificate",
+    subject: "Here is your KALA membership certificate",
     text,
     html,
     attachments,
