@@ -89,7 +89,7 @@ function NamePicker({ onPick }) {
 }
 
 export default function LegacyMemberAccess() {
-  const [step, setStep] = useState("pick"); // pick | pin-setup | pin-login | details | result
+  const [step, setStep] = useState("pick"); // pick | setup | pin-login | result
   const [entry, setEntry] = useState(null); // { id, name, has_pin, claimed }
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -112,7 +112,7 @@ export default function LegacyMemberAccess() {
     try {
       const status = await api.getLegacyMember(m.id);
       setEntry(status);
-      setStep(status.has_pin ? "pin-login" : "pin-setup");
+      setStep(status.has_pin ? "pin-login" : "setup");
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -120,21 +120,23 @@ export default function LegacyMemberAccess() {
     }
   }
 
-  async function submitSetPin(e) {
+  async function submitSetup(e) {
     e.preventDefault();
     if (pin.length < 4) return setErr("PIN must be 4-6 digits.");
     if (pin !== pinConfirm) return setErr("PINs don't match.");
     setBusy(true);
     setErr("");
     try {
-      await api.setLegacyPin(entry.id, pin);
-      const res = await api.loginLegacyMember(entry.id, pin);
-      if (res.claimed) {
-        setMember(res.member);
-        setStep("result");
-      } else {
-        setStep("details");
+      try {
+        await api.setLegacyPin(entry.id, pin);
+      } catch (pinErr) {
+        // 409 = a PIN was already set on a previous attempt where the claim
+        // step then failed (e.g. bad email) — safe to continue with it.
+        if (pinErr.status !== 409) throw pinErr;
       }
+      const res = await api.claimLegacyMember(entry.id, details);
+      setMember(res.member);
+      setStep("result");
     } catch (e2) {
       setErr(e2.message);
     } finally {
@@ -152,23 +154,9 @@ export default function LegacyMemberAccess() {
         setMember(res.member);
         setStep("result");
       } else {
-        setStep("details");
+        // PIN was set previously but the details step never completed.
+        setStep("setup");
       }
-    } catch (e2) {
-      setErr(e2.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function submitDetails(e) {
-    e.preventDefault();
-    setBusy(true);
-    setErr("");
-    try {
-      const res = await api.claimLegacyMember(entry.id, details);
-      setMember(res.member);
-      setStep("result");
     } catch (e2) {
       setErr(e2.message);
     } finally {
@@ -266,11 +254,12 @@ export default function LegacyMemberAccess() {
 
       {step !== "pick" && <Preview />}
 
-      {step === "pin-setup" && entry && (
-        <form className="cform" onSubmit={submitSetPin}>
+      {step === "setup" && entry && (
+        <form className="cform" onSubmit={submitSetup}>
           <p className="formnote">
-            Hi {entry.name.split(" ")[0]} — set a 4-6 digit PIN. You'll use it to log back in and
-            view your certificate later.
+            Hi {entry.name.split(" ")[0]} — we don't have your contact details yet. Set a PIN
+            (to log back in later) and fill these in; your certificate is issued and emailed to
+            you as soon as you submit.
           </p>
           <div className="row2">
             <div className="field">
@@ -294,50 +283,6 @@ export default function LegacyMemberAccess() {
               />
             </div>
           </div>
-          {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
-          <div className="sign" style={{ display: "flex", gap: 12 }}>
-            <button type="button" className="btn btn--ghost" onClick={() => setStep("pick")} disabled={busy}>
-              ← Not you?
-            </button>
-            <button type="submit" className="btn btn--solid" disabled={busy}>
-              {busy ? "Setting…" : "Set PIN →"}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {step === "pin-login" && entry && (
-        <form className="cform" onSubmit={submitLogin}>
-          <p className="formnote">Welcome back, {entry.name.split(" ")[0]}. Enter your PIN.</p>
-          <div className="field">
-            <label>PIN</label>
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-              autoFocus
-            />
-          </div>
-          {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
-          <div className="sign" style={{ display: "flex", gap: 12 }}>
-            <button type="button" className="btn btn--ghost" onClick={() => setStep("pick")} disabled={busy}>
-              ← Not you?
-            </button>
-            <button type="submit" className="btn btn--solid" disabled={busy}>
-              {busy ? "Checking…" : "Log in →"}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {step === "details" && entry && (
-        <form className="cform" onSubmit={submitDetails}>
-          <p className="formnote">
-            Almost done, {entry.name.split(" ")[0]}. Fill in a few details — your certificate will be
-            issued and emailed to you immediately.
-          </p>
           <div className="row2">
             <div className="field">
               <label>E-mail *</label>
@@ -367,9 +312,40 @@ export default function LegacyMemberAccess() {
             </select>
           </div>
           {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
-          <button type="submit" className="btn btn--solid" disabled={busy} style={{ alignSelf: "flex-start" }}>
-            {busy ? "Submitting…" : "Get my certificate →"}
-          </button>
+          <div className="sign" style={{ display: "flex", gap: 12 }}>
+            <button type="button" className="btn btn--ghost" onClick={() => setStep("pick")} disabled={busy}>
+              ← Not you?
+            </button>
+            <button type="submit" className="btn btn--solid" disabled={busy}>
+              {busy ? "Submitting…" : "Get my certificate →"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {step === "pin-login" && entry && (
+        <form className="cform" onSubmit={submitLogin}>
+          <p className="formnote">Welcome back, {entry.name.split(" ")[0]}. Enter your PIN.</p>
+          <div className="field">
+            <label>PIN</label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+              autoFocus
+            />
+          </div>
+          {err && <p className="formnote" style={{ color: "#b3402f" }}>{err}</p>}
+          <div className="sign" style={{ display: "flex", gap: 12 }}>
+            <button type="button" className="btn btn--ghost" onClick={() => setStep("pick")} disabled={busy}>
+              ← Not you?
+            </button>
+            <button type="submit" className="btn btn--solid" disabled={busy}>
+              {busy ? "Checking…" : "Log in →"}
+            </button>
+          </div>
         </form>
       )}
 
