@@ -114,6 +114,11 @@ export async function initSchema() {
   // Self-set PIN (salt:hash, see server/pin.js) so a legacy member can log
   // back in later to view/resend their certificate without an account system.
   await q(`ALTER TABLE legacy_members ADD COLUMN IF NOT EXISTS pin_hash TEXT;`);
+  // Every legacy row gets a member record + ID up front (bulk-assigned, see
+  // server/promote-legacy-members.js) — this tracks whether the person has
+  // actually completed the self-service PIN + details flow, decoupled from
+  // claimed_member_id simply existing.
+  await q(`ALTER TABLE legacy_members ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT false;`);
 
   // Older deployments may have created the FK without ON DELETE SET NULL —
   // fix it in place so deleting a claimed member frees up their roster entry

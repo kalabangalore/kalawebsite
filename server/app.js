@@ -357,7 +357,7 @@ app.get("/api/legacy-members", async (req, res) => {
   const { rows: countRows } = await q(`SELECT count(*)::int AS n FROM legacy_members ${clause}`, params);
   params.push(limit, offset);
   const { rows } = await q(
-    `SELECT id, name, detail, (claimed_member_id IS NOT NULL) AS claimed
+    `SELECT id, name, detail, profile_completed AS claimed
      FROM legacy_members ${clause} ORDER BY name ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
@@ -367,9 +367,11 @@ app.get("/api/legacy-members", async (req, res) => {
 // Public: minimal status for one roster entry — just enough for the login
 // page to decide whether to show "set your PIN" or "enter your PIN". Never
 // exposes member details here; that only happens after a correct PIN.
+// "claimed" means they've completed the self-service details form — every
+// roster entry already has an underlying member record with an ID.
 app.get("/api/legacy-members/:id", async (req, res) => {
   const { rows } = await q(
-    "SELECT id, name, (pin_hash IS NOT NULL) AS has_pin, (claimed_member_id IS NOT NULL) AS claimed FROM legacy_members WHERE id = $1",
+    "SELECT id, name, (pin_hash IS NOT NULL) AS has_pin, profile_completed AS claimed FROM legacy_members WHERE id = $1",
     [req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
@@ -383,18 +385,19 @@ app.post("/api/legacy-members/:id/set-pin", async (req, res) => {
   if (!/^\d{4,6}$/.test(pin)) {
     return res.status(400).json({ error: "PIN must be 4-6 digits" });
   }
-  const { rows } = await q("SELECT id, pin_hash, (claimed_member_id IS NOT NULL) AS claimed FROM legacy_members WHERE id = $1", [req.params.id]);
+  const { rows } = await q("SELECT id, pin_hash, profile_completed FROM legacy_members WHERE id = $1", [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
   if (rows[0].pin_hash) {
     return res.status(409).json({ error: "A PIN is already set for this entry — please log in instead." });
   }
   await q("UPDATE legacy_members SET pin_hash = $1 WHERE id = $2", [hashPin(pin), req.params.id]);
-  res.json({ ok: true, claimed: rows[0].claimed });
+  res.json({ ok: true, claimed: rows[0].profile_completed });
 });
 
 // Public: log in with a previously-set PIN. Returns the linked member record
-// (for viewing/re-downloading the certificate) if already claimed, otherwise
-// signals the client to continue on to the "fill in your details" step.
+// (for viewing/re-downloading the certificate) if the details form has
+// already been completed, otherwise signals the client to continue on to
+// that step (their member record + ID already exist either way).
 app.post("/api/legacy-members/:id/login", async (req, res) => {
   const { rows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
   if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
@@ -405,7 +408,7 @@ app.post("/api/legacy-members/:id/login", async (req, res) => {
   if (!verifyPin(String(req.body.pin || ""), legacy.pin_hash)) {
     return res.status(401).json({ error: "Incorrect PIN" });
   }
-  if (!legacy.claimed_member_id) {
+  if (!legacy.profile_completed) {
     return res.json({ ok: true, claimed: false });
   }
   const { rows: memberRows } = await q("SELECT * FROM members WHERE id = $1", [legacy.claimed_member_id]);
@@ -413,15 +416,17 @@ app.post("/api/legacy-members/:id/login", async (req, res) => {
 });
 
 // Public: a legacy roster entry is claimed by the person it belongs to. No
-// admin approval — the certificate is issued immediately (status 'active').
-// Requires a PIN to already be set (i.e. this follows /set-pin) and an
-// email address, since the certificate is delivered by email.
+// admin approval — every roster entry already has a member record and ID
+// (bulk-assigned, see server/promote-legacy-members.js); this just fills in
+// the personal details on that existing record. Requires a PIN to already
+// be set (i.e. this follows /set-pin) and an email address, since the
+// certificate is delivered by email.
 app.post("/api/legacy-members/:id/claim", async (req, res) => {
   try {
     const { rows: legacyRows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
     if (!legacyRows.length) return res.status(404).json({ error: "Roster entry not found" });
     const legacy = legacyRows[0];
-    if (legacy.claimed_member_id) {
+    if (legacy.profile_completed) {
       return res.status(409).json({ error: "This membership has already been claimed." });
     }
     if (!legacy.pin_hash) {
@@ -434,19 +439,47 @@ app.post("/api/legacy-members/:id/claim", async (req, res) => {
     const membershipType = ["life", "institutional", "student"].includes(req.body.membership_type)
       ? req.body.membership_type
       : "life";
-    const certRef = genCertRef();
-    const verifiedDate = new Date().toISOString().slice(0, 10);
 
-    const { cols, vals } = pick({ ...req.body, membership_type: membershipType }, CLAIM_FIELDS);
-    cols.push("name", "status", "source", "certificate_ref", "verified_date", "notes");
-    vals.push(legacy.name, "active", "legacy_claim", certRef, verifiedDate, legacy.detail || null);
-    const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
+    let member;
+    if (legacy.claimed_member_id) {
+      // The normal path: this roster entry already has a pre-assigned
+      // member record (every legacy row does, post-migration) — fill in
+      // the personal details on it, regenerating the membership number
+      // only if the type actually changed from the bulk-assigned default.
+      const { cols, vals } = pick({ ...req.body, membership_type: membershipType }, CLAIM_FIELDS);
+      vals.push(legacy.claimed_member_id);
+      const set = cols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+      const { rows } = await q(
+        `UPDATE members SET ${set}, updated_at = now() WHERE id = $${vals.length} RETURNING *`,
+        vals
+      );
+      member = rows[0];
+      if (member.membership_type !== membershipType || !member.membership_no) {
+        member.membership_no = genMembershipNo(member);
+        await q("UPDATE members SET membership_no = $1, membership_type = $2 WHERE id = $3", [
+          member.membership_no,
+          membershipType,
+          member.id,
+        ]);
+        member.membership_type = membershipType;
+      }
+    } else {
+      // Defensive fallback for a roster entry that somehow has no linked
+      // member record yet (shouldn't happen after the one-time migration).
+      const certRef = genCertRef();
+      const verifiedDate = new Date().toISOString().slice(0, 10);
+      const { cols, vals } = pick({ ...req.body, membership_type: membershipType }, CLAIM_FIELDS);
+      cols.push("name", "status", "source", "certificate_ref", "verified_date", "notes");
+      vals.push(legacy.name, "active", "legacy_claim", certRef, verifiedDate, legacy.detail || null);
+      const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
+      const { rows } = await q(`INSERT INTO members (${cols.join(", ")}) VALUES (${ph}) RETURNING *`, vals);
+      member = rows[0];
+      member.membership_no = genMembershipNo(member);
+      await q("UPDATE members SET membership_no = $1 WHERE id = $2", [member.membership_no, member.id]);
+      await q("UPDATE legacy_members SET claimed_member_id = $1 WHERE id = $2", [member.id, legacy.id]);
+    }
 
-    const { rows } = await q(`INSERT INTO members (${cols.join(", ")}) VALUES (${ph}) RETURNING *`, vals);
-    const member = rows[0];
-    member.membership_no = genMembershipNo(member);
-    await q("UPDATE members SET membership_no = $1 WHERE id = $2", [member.membership_no, member.id]);
-    await q("UPDATE legacy_members SET claimed_member_id = $1 WHERE id = $2", [member.id, legacy.id]);
+    await q("UPDATE legacy_members SET profile_completed = true WHERE id = $1", [legacy.id]);
 
     res.status(201).json({ ok: true, member });
   } catch (err) {
