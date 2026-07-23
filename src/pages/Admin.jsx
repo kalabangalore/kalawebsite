@@ -241,6 +241,143 @@ function CertificateLayout() {
   );
 }
 
+/* ------------------------------------------------------------- site content */
+function SiteContentEditor() {
+  const [content, setContent] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.getSiteContent().then(setContent).catch((e) => setError(e.message));
+  }, []);
+
+  function touch() {
+    setSaved(false);
+  }
+
+  function updateSlide(i, value) {
+    touch();
+    setContent((c) => ({ ...c, heroSlides: c.heroSlides.map((s, idx) => (idx === i ? value : s)) }));
+  }
+  function addSlide() {
+    touch();
+    setContent((c) => ({ ...c, heroSlides: [...c.heroSlides, ""] }));
+  }
+  function removeSlide(i) {
+    touch();
+    setContent((c) => ({ ...c, heroSlides: c.heroSlides.filter((_, idx) => idx !== i) }));
+  }
+
+  function updateBanner(i, field, value) {
+    touch();
+    setContent((c) => ({
+      ...c,
+      banners: c.banners.map((b, idx) => (idx === i ? { ...b, [field]: value } : b)),
+    }));
+  }
+  function addBanner() {
+    touch();
+    setContent((c) => ({ ...c, banners: [...c.banners, { img: "", title: "", kicker: "" }] }));
+  }
+  function removeBanner(i) {
+    touch();
+    setContent((c) => ({ ...c, banners: c.banners.filter((_, idx) => idx !== i) }));
+  }
+
+  function updateContact(field, value) {
+    touch();
+    setContent((c) => ({ ...c, contact: { ...c.contact, [field]: value } }));
+  }
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    try {
+      await api.updateSiteContent(content);
+      setSaved(true);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!content) return <p className="formnote" style={{ padding: "24px 8px" }}>Loading site content…</p>;
+
+  return (
+    <div className="certlayout">
+      <div className="certlayout__fields" style={{ maxWidth: 720 }}>
+        <fieldset className="mfieldset">
+          <legend>Home carousel photos</legend>
+          <p className="formnote">Image URLs shown in the homepage hero carousel, in order.</p>
+          {content.heroSlides.map((src, i) => (
+            <div className="row2" key={i}>
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>Photo {i + 1}</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={src} onChange={(e) => updateSlide(i, e.target.value)} placeholder="/carousel/1.jpeg or https://…" />
+                  <button type="button" className="btn btn--ghost" onClick={() => removeSlide(i)}>Remove</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addSlide}>
+            + Add photo
+          </button>
+        </fieldset>
+
+        <fieldset className="mfieldset">
+          <legend>"In the field" banners</legend>
+          {content.banners.map((b, i) => (
+            <div key={i} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 4 }}>
+              <div className="field">
+                <label>Image URL</label>
+                <input value={b.img} onChange={(e) => updateBanner(i, "img", e.target.value)} placeholder="/banners/photo.jpg or https://…" />
+              </div>
+              <div className="row2">
+                <div className="field">
+                  <label>Title</label>
+                  <input value={b.title} onChange={(e) => updateBanner(i, "title", e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Kicker</label>
+                  <input value={b.kicker} onChange={(e) => updateBanner(i, "kicker", e.target.value)} />
+                </div>
+              </div>
+              <button type="button" className="btn btn--ghost" onClick={() => removeBanner(i)}>Remove banner</button>
+            </div>
+          ))}
+          <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addBanner}>
+            + Add banner
+          </button>
+        </fieldset>
+
+        <fieldset className="mfieldset">
+          <legend>Contact details</legend>
+          <div className="field">
+            <label>Phone</label>
+            <input value={content.contact.altPhone} onChange={(e) => updateContact("altPhone", e.target.value)} />
+          </div>
+          <div className="field">
+            <label>E-mail</label>
+            <input value={content.contact.email} onChange={(e) => updateContact("email", e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Address</label>
+            <textarea rows="3" value={content.contact.address} onChange={(e) => updateContact("address", e.target.value)} />
+          </div>
+        </fieldset>
+
+        {error && <p className="formnote" style={{ color: "#b3402f" }}>{error}</p>}
+        <button className="btn btn--solid" disabled={saving} onClick={save} style={{ alignSelf: "flex-start" }}>
+          {saving ? "Saving…" : saved ? "Saved ✓" : "Save changes"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ login */
 function Login({ onIn }) {
   const [u, setU] = useState("");
@@ -412,7 +549,7 @@ function AddForm({ onAdd, onClose }) {
 
 /* ------------------------------------------------------------------ dashboard */
 function Dashboard({ onOut }) {
-  const [view, setView] = useState("members"); // members | layout
+  const [view, setView] = useState("members"); // members | layout | content
   const [stats, setStats] = useState(null);
   const [members, setMembers] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -473,6 +610,7 @@ function Dashboard({ onOut }) {
           <div className="seg">
             <button className={view === "members" ? "is-on" : ""} onClick={() => setView("members")}>Members</button>
             <button className={view === "layout" ? "is-on" : ""} onClick={() => setView("layout")}>Certificate layout</button>
+            <button className={view === "content" ? "is-on" : ""} onClick={() => setView("content")}>Site content</button>
           </div>
           {view === "members" && <button className="btn btn--solid" onClick={() => setAdding(true)}>+ Add member</button>}
           <button className="btn btn--ghost" onClick={() => { clearToken(); onOut(); }}>Sign out</button>
@@ -481,6 +619,8 @@ function Dashboard({ onOut }) {
 
       {view === "layout" ? (
         <CertificateLayout />
+      ) : view === "content" ? (
+        <SiteContentEditor />
       ) : (
       <>
       <div className="admin__stats">

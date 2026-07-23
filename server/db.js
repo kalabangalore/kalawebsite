@@ -87,13 +87,47 @@ export async function initSchema() {
     `CREATE UNIQUE INDEX IF NOT EXISTS members_certificate_ref_idx ON members (certificate_ref) WHERE certificate_ref IS NOT NULL;`
   );
 
-  // Generic key/value settings store — currently just the certificate placeholder layout.
+  // Generic key/value settings store — certificate placeholder layout, and
+  // the editable home carousel/banners/contact content (key 'site_content').
   await q(`
     CREATE TABLE IF NOT EXISTS settings (
       key        TEXT PRIMARY KEY,
       value      JSONB NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+  `);
+
+  // The pre-2026 membership roster (name + free-text detail only, no
+  // structured fields) — imported once from src/data/members.js. A row here
+  // becomes a real `members` row (claimed_member_id set) once that person
+  // self-claims it and fills in the missing details.
+  await q(`
+    CREATE TABLE IF NOT EXISTS legacy_members (
+      id                SERIAL PRIMARY KEY,
+      name              TEXT NOT NULL,
+      detail            TEXT,
+      claimed_member_id INTEGER REFERENCES members(id) ON DELETE SET NULL,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await q(`CREATE INDEX IF NOT EXISTS legacy_members_name_idx ON legacy_members (name);`);
+
+  // Older deployments may have created the FK without ON DELETE SET NULL —
+  // fix it in place so deleting a claimed member frees up their roster entry
+  // instead of failing.
+  await q(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'legacy_members_claimed_member_id_fkey' AND confdeltype != 'n'
+      ) THEN
+        ALTER TABLE legacy_members DROP CONSTRAINT legacy_members_claimed_member_id_fkey;
+        ALTER TABLE legacy_members
+          ADD CONSTRAINT legacy_members_claimed_member_id_fkey
+          FOREIGN KEY (claimed_member_id) REFERENCES members(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
   `);
 }
 

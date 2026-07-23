@@ -1,10 +1,11 @@
 import { useState } from "react";
 import PageHead from "../components/PageHead";
 import { Reveal } from "../components/primitives";
-import { org } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
+  const { contact } = useSiteContent();
 
   return (
     <>
@@ -21,18 +22,18 @@ export default function Contact() {
             <ul className="cinfo" style={{ marginTop: 24 }}>
               <li>
                 <div className="k">Address</div>
-                <div className="v">{org.address}</div>
+                <div className="v">{contact.address}</div>
               </li>
               <li>
                 <div className="k">Phone</div>
                 <div className="v">
-                  <a href={`tel:${org.altPhone.replace(/\s/g, "")}`}>{org.altPhone}</a>
+                  <a href={`tel:${contact.altPhone.replace(/\s/g, "")}`}>{contact.altPhone}</a>
                 </div>
               </li>
               <li>
                 <div className="k">Email</div>
                 <div className="v">
-                  <a href={`mailto:${org.email}`}>{org.email}</a>
+                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
                 </div>
               </li>
             </ul>

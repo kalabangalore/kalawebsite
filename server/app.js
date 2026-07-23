@@ -4,8 +4,20 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { q, initSchema, WRITABLE, ADMIN_WRITABLE } from "./db.js";
 import { DEFAULT_LAYOUT, genCertRef, genMembershipNo } from "./certificate.js";
+import { heroSlides, banners, org } from "../src/data/content.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+
+// Editable home-page content (carousel/banners/contact) — falls back to the
+// same values baked into src/data/content.js until an admin saves an override.
+const DEFAULT_SITE_CONTENT = {
+  heroSlides,
+  banners,
+  contact: { altPhone: org.altPhone, email: org.email, address: org.address },
+};
+
+// Fields a self-claiming legacy member may fill in themselves.
+const CLAIM_FIELDS = ["email", "mobile", "date_of_birth", "designation", "membership_type"];
 
 const app = express();
 app.use(cors());
@@ -263,6 +275,69 @@ app.post("/api/certificate/layout/propose", async (req, res) => {
   }
 });
 
+// Public: search/paginate the pre-2026 legacy roster.
+app.get("/api/legacy-members", async (req, res) => {
+  const { q: search } = req.query;
+  const limit = Math.min(Number(req.query.limit) || 60, 200);
+  const offset = Number(req.query.offset) || 0;
+  const where = [];
+  const params = [];
+  if (search) {
+    params.push(`%${search}%`);
+    where.push(`name ILIKE $${params.length}`);
+  }
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const { rows: countRows } = await q(`SELECT count(*)::int AS n FROM legacy_members ${clause}`, params);
+  params.push(limit, offset);
+  const { rows } = await q(
+    `SELECT id, name, detail, (claimed_member_id IS NOT NULL) AS claimed
+     FROM legacy_members ${clause} ORDER BY name ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+  res.json({ total: countRows[0].n, members: rows });
+});
+
+// Public: a legacy roster entry is claimed by the person it belongs to. No
+// admin approval — the certificate is issued immediately (status 'active').
+app.post("/api/legacy-members/:id/claim", async (req, res) => {
+  try {
+    const { rows: legacyRows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
+    if (!legacyRows.length) return res.status(404).json({ error: "Roster entry not found" });
+    const legacy = legacyRows[0];
+    if (legacy.claimed_member_id) {
+      return res.status(409).json({ error: "This membership has already been claimed." });
+    }
+
+    const membershipType = ["life", "institutional", "student"].includes(req.body.membership_type)
+      ? req.body.membership_type
+      : "life";
+    const certRef = genCertRef();
+    const verifiedDate = new Date().toISOString().slice(0, 10);
+
+    const { cols, vals } = pick({ ...req.body, membership_type: membershipType }, CLAIM_FIELDS);
+    cols.push("name", "status", "source", "certificate_ref", "verified_date", "notes");
+    vals.push(legacy.name, "active", "legacy_claim", certRef, verifiedDate, legacy.detail || null);
+    const ph = vals.map((_, i) => `$${i + 1}`).join(", ");
+
+    const { rows } = await q(`INSERT INTO members (${cols.join(", ")}) VALUES (${ph}) RETURNING *`, vals);
+    const member = rows[0];
+    member.membership_no = genMembershipNo(member);
+    await q("UPDATE members SET membership_no = $1 WHERE id = $2", [member.membership_no, member.id]);
+    await q("UPDATE legacy_members SET claimed_member_id = $1 WHERE id = $2", [member.id, legacy.id]);
+
+    res.status(201).json({ ok: true, member });
+  } catch (err) {
+    console.error("legacy claim error:", err.message);
+    res.status(500).json({ error: "Could not complete your claim. Please try again." });
+  }
+});
+
+// Public: current home-page content (carousel, banners, contact details).
+app.get("/api/site-content", async (_req, res) => {
+  const { rows } = await q(`SELECT value FROM settings WHERE key = 'site_content'`);
+  res.json({ ...DEFAULT_SITE_CONTENT, ...(rows[0]?.value || {}) });
+});
+
 // Public: look up a member's certificate by their reference code.
 app.get("/api/certificate/lookup", async (req, res) => {
   const ref = (req.query.ref || "").trim().toUpperCase();
@@ -437,6 +512,22 @@ app.post("/api/admin/certificate/layout/approve", auth, async (_req, res) => {
 app.delete("/api/admin/certificate/layout/pending", auth, async (_req, res) => {
   await q(`DELETE FROM settings WHERE key = 'certificate_layout_pending'`);
   res.json({ ok: true });
+});
+
+// Admin: update the home-page carousel/banners/contact details (reads
+// happen via the public GET /api/site-content above).
+app.put("/api/admin/site-content", auth, async (req, res) => {
+  try {
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('site_content', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(req.body)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("site content update error:", err.message);
+    res.status(500).json({ error: "Could not save site content" });
+  }
 });
 
 app.delete("/api/admin/members/:id", auth, async (req, res) => {

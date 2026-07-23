@@ -440,17 +440,24 @@ h3 { font-family: var(--primary); font-weight: 600; }
 
 .dirlist { border-top: 1px solid var(--line-dark); }
 .dirrow {
-  display: grid; grid-template-columns: 52px 1fr; gap: 18px;
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 18px;
   padding: 18px 8px;
   border-bottom: 1px solid var(--line-dark);
-  align-items: baseline;
+  align-items: center;
   transition: background 0.25s, padding-left 0.3s var(--ease);
 }
 .dirrow:hover { background: rgba(194,135,63,0.06); padding-left: 16px; }
-.dirrow__idx { font-family: var(--secondary); font-size: 12px; color: #9a6a28; }
+.dirrow__idx { font-family: var(--secondary); font-size: 12px; color: #9a6a28; align-self: baseline; }
 .dirrow__name { font-family: var(--primary); font-size: 19px; font-weight: 600; color: var(--text-dark); }
 .dirrow__detail { font-size: 14px; line-height: 1.55; color: var(--muted-dark); margin-top: 3px; }
+.dirrow__claimed { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-dark); white-space: nowrap; }
 .loadmore { display: flex; justify-content: center; margin-top: 40px; }
+
+.legacyclaim__form {
+  padding: 20px; margin: -1px 0 0; background: var(--paper-2);
+  border: 1px solid var(--line-dark); border-radius: 0 0 var(--radius) var(--radius);
+}
+.legacyclaim__result { margin-bottom: 30px; }
 
 /* ============================================================
    Activities timetable

@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import Lightbox from "../components/Lightbox";
-import { org, banners, heroSlides, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
+import { org, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
 import { council } from "../data/council";
+import { useSiteContent } from "../lib/useSiteContent";
 
 const officers = council.filter((c) => c.role !== "Governing Council Members");
 
@@ -65,12 +66,13 @@ function FounderMedia() {
   );
 }
 
-function Hero() {
+function Hero({ heroSlides }) {
   const [slide, setSlide] = useState(0);
   useEffect(() => {
+    setSlide(0);
     const id = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5000);
     return () => clearInterval(id);
-  }, []);
+  }, [heroSlides]);
 
   return (
     <section className="hero">
@@ -109,10 +111,11 @@ function Hero() {
 
 export default function Home() {
   const [lightbox, setLightbox] = useState(null);
+  const { heroSlides, banners } = useSiteContent();
 
   return (
     <>
-      <Hero />
+      <Hero heroSlides={heroSlides} />
 
       {/* Stats */}
       <section style={{ background: "var(--ink)" }}>

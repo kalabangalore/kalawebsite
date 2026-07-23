@@ -61,4 +61,15 @@ export const api = {
     request("/admin/certificate/layout/pending", { method: "DELETE", auth: true }),
   lookupCertificate: (ref) =>
     request(`/certificate/lookup?ref=${encodeURIComponent(ref)}`),
+
+  listLegacyMembers: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v != null && v !== "")
+    ).toString();
+    return request(`/legacy-members${qs ? `?${qs}` : ""}`);
+  },
+  claimLegacyMember: (id, body) => request(`/legacy-members/${id}/claim`, { method: "POST", body }),
+
+  getSiteContent: () => request("/site-content"),
+  updateSiteContent: (body) => request("/admin/site-content", { method: "PUT", body, auth: true }),
 };

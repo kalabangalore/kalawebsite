@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { org } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function Newsletter() {
   return (
@@ -26,6 +27,7 @@ export default function Newsletter() {
 }
 
 export function Footer() {
+  const { contact } = useSiteContent();
   return (
     <footer className="footer">
       <div className="wrap">
@@ -53,8 +55,8 @@ export function Footer() {
           </div>
           <div className="footer__col">
             <h4>Contact</h4>
-            <a href={`tel:${org.altPhone.replace(/\s/g, "")}`}>{org.altPhone}</a>
-            <a href={`mailto:${org.email}`}>{org.email}</a>
+            <a href={`tel:${contact.altPhone.replace(/\s/g, "")}`}>{contact.altPhone}</a>
+            <a href={`mailto:${contact.email}`}>{contact.email}</a>
             <Link to="/contact">Send a message</Link>
           </div>
         </div>
