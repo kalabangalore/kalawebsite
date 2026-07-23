@@ -111,6 +111,9 @@ export async function initSchema() {
     );
   `);
   await q(`CREATE INDEX IF NOT EXISTS legacy_members_name_idx ON legacy_members (name);`);
+  // Self-set PIN (salt:hash, see server/pin.js) so a legacy member can log
+  // back in later to view/resend their certificate without an account system.
+  await q(`ALTER TABLE legacy_members ADD COLUMN IF NOT EXISTS pin_hash TEXT;`);
 
   // Older deployments may have created the FK without ON DELETE SET NULL —
   // fix it in place so deleting a claimed member frees up their roster entry

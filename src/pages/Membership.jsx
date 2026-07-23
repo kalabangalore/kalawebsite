@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
 import { membership } from "../data/content";
 import MembershipForm from "../components/MembershipForm";
+import LegacyMemberAccess from "../components/LegacyMemberAccess";
 
 export default function Membership() {
+  const [tab, setTab] = useState("new"); // new | existing
   return (
     <>
       <PageHead
@@ -52,15 +55,24 @@ export default function Membership() {
           <Reveal>
             <span className="eyebrow">Membership form</span>
             <h2 className="section-title" style={{ color: "var(--text)" }}>
-              Apply to join KALA.
+              {tab === "new" ? "Apply to join KALA." : "Already a KALA member?"}
             </h2>
-            <p className="lead" style={{ marginTop: 18, marginBottom: 44 }}>
-              Complete the form below — the same details as the printed membership form. Your
-              application is saved securely and reviewed by the office.
+            <p className="lead" style={{ marginTop: 18, marginBottom: 24 }}>
+              {tab === "new"
+                ? "Complete the form below — the same details as the printed membership form. Your application is saved securely and reviewed by the office."
+                : "If you're on our pre-2026 membership roll, log in with your name and PIN to get your certificate — issued and emailed to you immediately."}
             </p>
+            <div className="seg" style={{ marginBottom: 36 }}>
+              <button className={tab === "new" ? "is-on" : ""} onClick={() => setTab("new")}>
+                New application
+              </button>
+              <button className={tab === "existing" ? "is-on" : ""} onClick={() => setTab("existing")}>
+                Existing member login
+              </button>
+            </div>
           </Reveal>
           <Reveal delay={0.05}>
-            <MembershipForm />
+            {tab === "new" ? <MembershipForm /> : <LegacyMemberAccess />}
           </Reveal>
         </div>
       </section>

@@ -9,7 +9,7 @@ const TEMPLATE = {
 // Renders a membership certificate onto a <canvas>, re-drawing whenever the
 // template, layout, or field values change. Nothing here is ever persisted —
 // it's composited fresh in the browser every time.
-export default function CertificateCanvas({ variant = "draft", layout, data, className }) {
+export default function CertificateCanvas({ variant = "draft", layout, data, className, onReady }) {
   const canvasRef = useRef(null);
   const [ready, setReady] = useState(false);
 
@@ -19,10 +19,12 @@ export default function CertificateCanvas({ variant = "draft", layout, data, cla
       if (cancelled || !canvasRef.current) return;
       drawCertificate(canvasRef.current, { templateImg: img, layout, data });
       setReady(true);
+      onReady?.(canvasRef.current);
     });
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, layout, data]);
 
   return (

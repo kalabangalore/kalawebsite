@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { q, initSchema, WRITABLE, ADMIN_WRITABLE } from "./db.js";
 import { DEFAULT_LAYOUT, genCertRef, genMembershipNo } from "./certificate.js";
 import { heroSlides, banners, org } from "../src/data/content.js";
+import { hashPin, verifyPin } from "./pin.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
@@ -179,6 +180,72 @@ async function emailNotification(receipt, certificatePreview, meta) {
   return true;
 }
 
+// Emails a legacy member's freshly-issued certificate to the address they
+// gave when claiming their roster entry (or on a later "resend" request).
+async function emailCertificate(member, certificatePreview) {
+  const transport = getMailer();
+  if (!transport || !member.email) return false;
+
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const attachments = certificatePreview
+    ? [{ filename: "certificate.png", content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certificatePreview.mimeType || "image/png" }]
+    : [];
+
+  const html = `
+<div style="background:#e9e4d8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#f4f0e6;border-radius:6px;overflow:hidden;border:1px solid #d8cdb5;">
+    <tr>
+      <td style="background:#0f1f1b;padding:28px 32px;text-align:center;">
+        <div style="color:#f4f0e6;font-size:20px;font-weight:700;letter-spacing:0.02em;">KARNATAKA STATE LIBRARY ASSOCIATION</div>
+        <div style="color:#d9a960;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;margin-top:6px;">Reg. No. 829/88-89</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <div style="color:#c2873f;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;margin-bottom:10px;">Your membership certificate</div>
+        <p style="color:#1a2a25;font-size:15px;line-height:1.7;margin:0 0 16px;">
+          Welcome back to the Karnataka State Library Association, <b>${member.name}</b>. Your
+          certificate is attached to this email.
+        </p>
+        <table role="presentation" width="100%" style="border-top:1px solid #d8cdb5;border-bottom:1px solid #d8cdb5;margin-bottom:20px;">
+          <tr><td style="padding:6px 0;color:#5c6f66;font-size:13px;width:150px;">Membership No.</td><td style="padding:6px 0;color:#1a2a25;font-size:14px;font-weight:600;">${member.membership_no || "—"}</td></tr>
+          <tr><td style="padding:6px 0;color:#5c6f66;font-size:13px;width:150px;">Reference code</td><td style="padding:6px 0;color:#1a2a25;font-size:14px;font-weight:600;">${member.certificate_ref}</td></tr>
+        </table>
+        <p style="color:#5c6f66;font-size:13.5px;line-height:1.7;margin:0;">
+          Save your reference code — use it at
+          <a href="${siteUrl}/certificate" style="color:#9a6a28;">${siteUrl}/certificate</a>
+          any time to view or re-download your certificate.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0f1f1b;padding:16px 32px;text-align:center;color:#9db5a8;font-size:11px;letter-spacing:0.06em;">
+        Karnataka State Library Association (R) · karnatakalibraryassociation@gmail.com
+      </td>
+    </tr>
+  </table>
+</div>`;
+
+  const text = [
+    `Welcome back to the Karnataka State Library Association, ${member.name}.`,
+    "",
+    `Membership No.: ${member.membership_no || "-"}`,
+    `Reference code: ${member.certificate_ref}`,
+    "",
+    `Use the reference code above any time at ${siteUrl}/certificate to view or re-download your certificate.`,
+  ].join("\n");
+
+  await transport.sendMail({
+    from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
+    to: member.email,
+    subject: "Your KALA membership certificate",
+    text,
+    html,
+    attachments,
+  });
+  return true;
+}
+
 function auth(req, res, next) {
   const h = req.headers.authorization || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : null;
@@ -297,8 +364,58 @@ app.get("/api/legacy-members", async (req, res) => {
   res.json({ total: countRows[0].n, members: rows });
 });
 
+// Public: minimal status for one roster entry — just enough for the login
+// page to decide whether to show "set your PIN" or "enter your PIN". Never
+// exposes member details here; that only happens after a correct PIN.
+app.get("/api/legacy-members/:id", async (req, res) => {
+  const { rows } = await q(
+    "SELECT id, name, (pin_hash IS NOT NULL) AS has_pin, (claimed_member_id IS NOT NULL) AS claimed FROM legacy_members WHERE id = $1",
+    [req.params.id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
+  res.json(rows[0]);
+});
+
+// Public: first-time setup — a legacy member picks a PIN for themselves.
+// Only allowed once; after this they log in with it instead.
+app.post("/api/legacy-members/:id/set-pin", async (req, res) => {
+  const pin = String(req.body.pin || "");
+  if (!/^\d{4,6}$/.test(pin)) {
+    return res.status(400).json({ error: "PIN must be 4-6 digits" });
+  }
+  const { rows } = await q("SELECT id, pin_hash, (claimed_member_id IS NOT NULL) AS claimed FROM legacy_members WHERE id = $1", [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
+  if (rows[0].pin_hash) {
+    return res.status(409).json({ error: "A PIN is already set for this entry — please log in instead." });
+  }
+  await q("UPDATE legacy_members SET pin_hash = $1 WHERE id = $2", [hashPin(pin), req.params.id]);
+  res.json({ ok: true, claimed: rows[0].claimed });
+});
+
+// Public: log in with a previously-set PIN. Returns the linked member record
+// (for viewing/re-downloading the certificate) if already claimed, otherwise
+// signals the client to continue on to the "fill in your details" step.
+app.post("/api/legacy-members/:id/login", async (req, res) => {
+  const { rows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
+  const legacy = rows[0];
+  if (!legacy.pin_hash) {
+    return res.status(400).json({ error: "No PIN set yet for this entry — set one first." });
+  }
+  if (!verifyPin(String(req.body.pin || ""), legacy.pin_hash)) {
+    return res.status(401).json({ error: "Incorrect PIN" });
+  }
+  if (!legacy.claimed_member_id) {
+    return res.json({ ok: true, claimed: false });
+  }
+  const { rows: memberRows } = await q("SELECT * FROM members WHERE id = $1", [legacy.claimed_member_id]);
+  res.json({ ok: true, claimed: true, member: memberRows[0] || null });
+});
+
 // Public: a legacy roster entry is claimed by the person it belongs to. No
 // admin approval — the certificate is issued immediately (status 'active').
+// Requires a PIN to already be set (i.e. this follows /set-pin) and an
+// email address, since the certificate is delivered by email.
 app.post("/api/legacy-members/:id/claim", async (req, res) => {
   try {
     const { rows: legacyRows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
@@ -306,6 +423,12 @@ app.post("/api/legacy-members/:id/claim", async (req, res) => {
     const legacy = legacyRows[0];
     if (legacy.claimed_member_id) {
       return res.status(409).json({ error: "This membership has already been claimed." });
+    }
+    if (!legacy.pin_hash) {
+      return res.status(400).json({ error: "Set a PIN before completing your details." });
+    }
+    if (!req.body.email?.trim()) {
+      return res.status(400).json({ error: "An email address is required so we can send your certificate." });
     }
 
     const membershipType = ["life", "institutional", "student"].includes(req.body.membership_type)
@@ -329,6 +452,25 @@ app.post("/api/legacy-members/:id/claim", async (req, res) => {
   } catch (err) {
     console.error("legacy claim error:", err.message);
     res.status(500).json({ error: "Could not complete your claim. Please try again." });
+  }
+});
+
+// Public: email the (client-rendered) certificate image to a claimed legacy
+// member's address — used right after claiming, and for a "resend" action
+// on later logins.
+app.post("/api/legacy-members/:id/email-certificate", async (req, res) => {
+  try {
+    const { rows } = await q("SELECT claimed_member_id FROM legacy_members WHERE id = $1", [req.params.id]);
+    if (!rows.length || !rows[0].claimed_member_id) {
+      return res.status(404).json({ error: "This entry hasn't been claimed yet" });
+    }
+    const { rows: memberRows } = await q("SELECT * FROM members WHERE id = $1", [rows[0].claimed_member_id]);
+    if (!memberRows.length) return res.status(404).json({ error: "Member not found" });
+    const sent = await emailCertificate(memberRows[0], req.body.certificatePreview);
+    res.json({ ok: true, emailed: sent });
+  } catch (err) {
+    console.error("email certificate error:", err.message);
+    res.status(500).json({ error: "Could not email the certificate" });
   }
 });
 

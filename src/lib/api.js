@@ -69,6 +69,11 @@ export const api = {
     return request(`/legacy-members${qs ? `?${qs}` : ""}`);
   },
   claimLegacyMember: (id, body) => request(`/legacy-members/${id}/claim`, { method: "POST", body }),
+  getLegacyMember: (id) => request(`/legacy-members/${id}`),
+  setLegacyPin: (id, pin) => request(`/legacy-members/${id}/set-pin`, { method: "POST", body: { pin } }),
+  loginLegacyMember: (id, pin) => request(`/legacy-members/${id}/login`, { method: "POST", body: { pin } }),
+  emailLegacyCertificate: (id, certificatePreview) =>
+    request(`/legacy-members/${id}/email-certificate`, { method: "POST", body: { certificatePreview } }),
 
   getSiteContent: () => request("/site-content"),
   updateSiteContent: (body) => request("/admin/site-content", { method: "PUT", body, auth: true }),
