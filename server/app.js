@@ -361,14 +361,21 @@ app.get("/api/legacy-members", async (req, res) => {
   const params = [];
   if (search) {
     params.push(`%${search}%`);
-    where.push(`name ILIKE $${params.length}`);
+    where.push(`lm.name ILIKE $${params.length}`);
   }
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
-  const { rows: countRows } = await q(`SELECT count(*)::int AS n FROM legacy_members ${clause}`, params);
+  const { rows: countRows } = await q(`SELECT count(*)::int AS n FROM legacy_members lm ${clause}`, params);
   params.push(limit, offset);
+  // Every roster entry has a linked member record with a fixed membership
+  // number (see server/promote-legacy-members.js) — order by that number's
+  // own id, the stable identity it's derived from, not by name.
   const { rows } = await q(
-    `SELECT id, name, detail, profile_completed AS claimed
-     FROM legacy_members ${clause} ORDER BY name ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    `SELECT lm.id, lm.name, lm.detail, lm.profile_completed AS claimed, m.membership_no
+     FROM legacy_members lm
+     LEFT JOIN members m ON m.id = lm.claimed_member_id
+     ${clause}
+     ORDER BY m.id ASC NULLS LAST, lm.name ASC
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
   res.json({ total: countRows[0].n, members: rows });

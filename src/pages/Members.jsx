@@ -44,7 +44,7 @@ export default function Members() {
       <PageHead
         crumb={<span>Members</span>}
         title="The membership roll"
-        lead="More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name."
+        lead="More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name — listed in order of membership ID."
       />
 
       <section className="section paper-bg">
@@ -85,7 +85,7 @@ export default function Members() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, delay: Math.min(i % STEP, 12) * 0.01 }}
               >
-                <div className="dirrow__idx">{String(i + 1).padStart(4, "0")}</div>
+                <div className="dirrow__idx">{m.membership_no || "—"}</div>
                 <div>
                   <div className="dirrow__name">{m.name}</div>
                   {m.detail && <div className="dirrow__detail">{m.detail}</div>}
