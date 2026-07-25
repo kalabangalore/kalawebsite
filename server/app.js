@@ -96,11 +96,11 @@ async function emailNotification(receipt, certificatePreview, meta) {
     return false;
   }
 
-  const officeAddr = process.env.RECEIPT_EMAIL_TO || process.env.GMAIL_USER;
-  // Send only to the address the applicant gave — no office cc. If they
-  // left email blank, fall back to the office address so the submission
-  // isn't lost entirely.
-  const to = meta.email || officeAddr;
+  // Send only to the address the applicant gave. Email is a required field
+  // on the form, so this should always be present; the fallback goes to the
+  // association's own account, never RECEIPT_EMAIL_TO (a personal address
+  // that must not receive applicant data).
+  const to = meta.email || process.env.GMAIL_USER;
 
   const attachments = [];
   if (receipt) {
@@ -276,8 +276,17 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 // Submit a membership application.
 app.post("/api/membership", async (req, res) => {
   try {
-    if (!req.body?.name?.trim()) {
-      return res.status(400).json({ error: "Name is required" });
+    const required = [
+      ["name", "Name"],
+      ["email", "Email"],
+      ["mobile", "Mobile number"],
+      ["designation", "Designation"],
+      ["membership_type", "Membership type"],
+    ];
+    for (const [key, label] of required) {
+      if (!req.body?.[key]?.toString().trim()) {
+        return res.status(400).json({ error: `${label} is required` });
+      }
     }
 
     const certRef = genCertRef();

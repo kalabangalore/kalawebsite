@@ -231,7 +231,7 @@ export default function MembershipForm() {
     <form className="cform mform" onSubmit={submit}>
       {/* Membership type */}
       <fieldset className="mfieldset">
-        <legend>Membership type</legend>
+        <legend>Membership type *</legend>
         <div className="typepick">
           {TYPES.map((t) => (
             <label key={t.value} className={`typecard ${f.membership_type === t.value ? "is-sel" : ""}`}>
@@ -239,6 +239,7 @@ export default function MembershipForm() {
                 type="radio"
                 name="mtype"
                 value={t.value}
+                required
                 checked={f.membership_type === t.value}
                 onChange={set("membership_type")}
               />
@@ -257,16 +258,16 @@ export default function MembershipForm() {
           <Field label="Name *">
             <input value={f.name} onChange={set("name")} required placeholder="Full name" />
           </Field>
-          <Field label="Designation">
-            <input value={f.designation} onChange={set("designation")} placeholder="e.g. Librarian" />
+          <Field label="Designation *">
+            <input value={f.designation} onChange={set("designation")} required placeholder="e.g. Librarian" />
           </Field>
         </div>
         <div className="row2">
           <Field label="Date of birth">
             <input type="date" value={f.date_of_birth} onChange={set("date_of_birth")} />
           </Field>
-          <Field label="Mobile">
-            <input value={f.mobile} onChange={set("mobile")} placeholder="+91…" />
+          <Field label="Mobile *">
+            <input value={f.mobile} onChange={set("mobile")} required placeholder="+91…" />
           </Field>
         </div>
       </fieldset>
@@ -297,8 +298,8 @@ export default function MembershipForm() {
           <Field label="Pin">
             <input value={f.residence_pin} onChange={set("residence_pin")} />
           </Field>
-          <Field label="E-mail">
-            <input type="email" value={f.email} onChange={set("email")} placeholder="you@email.com" />
+          <Field label="E-mail *">
+            <input type="email" value={f.email} onChange={set("email")} required placeholder="you@email.com" />
           </Field>
         </div>
       </fieldset>
