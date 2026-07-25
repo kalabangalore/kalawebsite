@@ -97,8 +97,10 @@ async function emailNotification(receipt, certificatePreview, meta) {
   }
 
   const officeAddr = process.env.RECEIPT_EMAIL_TO || process.env.GMAIL_USER;
+  // Send only to the address the applicant gave — no office cc. If they
+  // left email blank, fall back to the office address so the submission
+  // isn't lost entirely.
   const to = meta.email || officeAddr;
-  const cc = meta.email ? officeAddr : undefined;
 
   const attachments = [];
   if (receipt) {
@@ -179,7 +181,6 @@ async function emailNotification(receipt, certificatePreview, meta) {
   await transport.sendMail({
     from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
     to,
-    cc,
     subject: `KALA membership application received — ${meta.name}`,
     text,
     html,
