@@ -87,6 +87,14 @@ export const council = [
   },
   {
     role: "Governing Council Members",
+    name: "Ms. Malini T S",
+    img: "/governing-council/malini-t-s.jpg",
+    detail: "Librarian, St Pauls College, Bangalore",
+    email: "",
+    phone: "",
+  },
+  {
+    role: "Governing Council Members",
     name: "Dr. Jairaj S Hosamani",
     img: "/governing-council/jairaj-hosamani.jpg",
     detail: "Librarian, Library by Brigade, RV University, Bengaluru - 560059",
