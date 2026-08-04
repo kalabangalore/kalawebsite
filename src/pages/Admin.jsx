@@ -432,10 +432,23 @@ function Login({ onIn }) {
 function Detail({ m, onClose, onChange, onDelete }) {
   const [showCert, setShowCert] = useState(false);
   const [layout, setLayout] = useState(null);
+  const isActive = m.status === "active";
+  const isRejected = m.status === "rejected";
 
   function togglePreview() {
     if (!showCert && !layout) api.getCertificateLayout().then(setLayout).catch(() => {});
     setShowCert((s) => !s);
+  }
+
+  function reject() {
+    const reason = prompt("Reason for rejecting this membership application:");
+    if (reason == null) return;
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      alert("Please enter a rejection reason before rejecting the application.");
+      return;
+    }
+    onChange(m.id, { status: "rejected" }, { rejectionReason: trimmed });
   }
 
   const row = (k, v) => v && (
@@ -487,12 +500,13 @@ function Detail({ m, onClose, onChange, onDelete }) {
         </div>
 
         <div className="modal__actions">
-          <div className="seg">
-            {["pending", "active", "rejected"].map((s) => (
-              <button key={s} className={m.status === s ? "is-on" : ""} onClick={() => onChange(m.id, { status: s })}>
-                {STATUS_LABEL[s]}
-              </button>
-            ))}
+          <div className="review-actions">
+            <button className="btn btn--solid" disabled={isActive} onClick={() => onChange(m.id, { status: "active" })}>
+              Active
+            </button>
+            <button className="btn btn--ghost danger" disabled={isRejected} onClick={reject}>
+              {isRejected ? "Rejected" : "Reject"}
+            </button>
           </div>
           <button className="btn btn--ghost" onClick={togglePreview}>
             {showCert ? "Hide certificate" : "Preview certificate"}
@@ -581,7 +595,7 @@ function Dashboard({ onOut }) {
 
   useEffect(() => { load(); }, [load]);
 
-  async function change(id, patch) {
+  async function change(id, patch, options = {}) {
     const prev = members.find((x) => x.id === id) || active;
     const wasActive = prev?.status === "active";
     const updated = await api.updateMember(id, patch);
@@ -600,6 +614,14 @@ function Dashboard({ onOut }) {
         }
       }
       setEmailingMember(updated);
+    }
+
+    if (patch.status === "rejected" && options.rejectionReason && updated.email) {
+      try {
+        await api.emailMemberRejection(updated.id, options.rejectionReason);
+      } catch (e) {
+        console.error("Could not email rejection notice:", e.message);
+      }
     }
   }
 

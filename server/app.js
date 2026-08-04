@@ -27,6 +27,10 @@ function extFor(mimeType) {
   return mimeType === "image/jpeg" ? "jpg" : "png";
 }
 
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 const app = express();
 app.use(cors());
 // Payment receipts arrive base64-encoded in the JSON body (~1.37x their
@@ -253,6 +257,66 @@ async function emailCertificate(member, certificatePreview) {
     text,
     html,
     attachments,
+  });
+  return true;
+}
+
+async function emailRejection(member, reason) {
+  const transport = getMailer();
+  if (!transport || !member.email) return false;
+
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const safeName = escHtml(member.name);
+  const safeReason = escHtml(reason);
+
+  const html = `
+<div style="background:#e9e4d8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#f4f0e6;border-radius:6px;overflow:hidden;border:1px solid #d8cdb5;">
+    <tr>
+      <td style="background:#0f1f1b;padding:28px 32px;text-align:center;">
+        <div style="color:#f4f0e6;font-size:20px;font-weight:700;letter-spacing:0.02em;">KARNATAKA STATE LIBRARY ASSOCIATION</div>
+        <div style="color:#d9a960;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;margin-top:6px;">Reg. No. 829/88-89</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <div style="color:#b3402f;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;margin-bottom:10px;">Membership application update</div>
+        <p style="color:#1a2a25;font-size:15px;line-height:1.7;margin:0 0 16px;">
+          Hello <b>${safeName}</b>, your membership application to the Karnataka State Library Association could not be approved at this time.
+        </p>
+        <div style="border-left:4px solid #d98a7c;background:#fff8f1;padding:14px 16px;color:#5c3b34;font-size:14px;line-height:1.7;margin:0 0 20px;">
+          ${safeReason}
+        </div>
+        <p style="color:#5c6f66;font-size:13.5px;line-height:1.7;margin:0;">
+          If you believe this needs review, please contact the Association office at
+          <a href="mailto:karnatakalibraryassociation@gmail.com" style="color:#9a6a28;">karnatakalibraryassociation@gmail.com</a>
+          or visit <a href="${siteUrl}" style="color:#9a6a28;">${siteUrl}</a>.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0f1f1b;padding:16px 32px;text-align:center;color:#9db5a8;font-size:11px;letter-spacing:0.06em;">
+        Karnataka State Library Association (R) Â· karnatakalibraryassociation@gmail.com
+      </td>
+    </tr>
+  </table>
+</div>`;
+
+  const text = [
+    `Hello ${member.name}, your membership application to the Karnataka State Library Association could not be approved at this time.`,
+    "",
+    "Reason:",
+    reason,
+    "",
+    "If you believe this needs review, please contact karnatakalibraryassociation@gmail.com.",
+  ].join("\n");
+
+  await transport.sendMail({
+    from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
+    to: member.email,
+    subject: "KALA membership application update",
+    text,
+    html,
   });
   return true;
 }
@@ -743,6 +807,20 @@ app.post("/api/admin/members/:id/email-certificate", auth, async (req, res) => {
   } catch (err) {
     console.error("admin email certificate error:", err.message);
     res.status(500).json({ error: "Could not email the certificate" });
+  }
+});
+
+app.post("/api/admin/members/:id/email-rejection", auth, async (req, res) => {
+  try {
+    const reason = String(req.body?.reason || "").trim();
+    if (!reason) return res.status(400).json({ error: "Rejection reason is required" });
+    const { rows } = await q("SELECT * FROM members WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+    const sent = await emailRejection(rows[0], reason);
+    res.json({ ok: true, emailed: sent });
+  } catch (err) {
+    console.error("admin rejection email error:", err.message);
+    res.status(500).json({ error: "Could not email the rejection notice" });
   }
 });
 

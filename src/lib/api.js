@@ -50,6 +50,8 @@ export const api = {
   deleteMember: (id) => request(`/admin/members/${id}`, { method: "DELETE", auth: true }),
   emailMemberCertificate: (id, certificatePreview) =>
     request(`/admin/members/${id}/email-certificate`, { method: "POST", body: { certificatePreview }, auth: true }),
+  emailMemberRejection: (id, reason) =>
+    request(`/admin/members/${id}/email-rejection`, { method: "POST", body: { reason }, auth: true }),
 
   getCertificateLayout: () => request("/certificate/layout"),
   updateCertificateLayout: (body) =>
