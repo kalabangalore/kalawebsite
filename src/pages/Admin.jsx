@@ -429,7 +429,7 @@ function Login({ onIn }) {
 }
 
 /* ------------------------------------------------------------- detail modal */
-function Detail({ m, onClose, onChange, onDelete }) {
+function Detail({ m, onClose, onChange, onDelete, notice }) {
   const [showCert, setShowCert] = useState(false);
   const [layout, setLayout] = useState(null);
   const isActive = m.status === "active";
@@ -438,6 +438,12 @@ function Detail({ m, onClose, onChange, onDelete }) {
   function togglePreview() {
     if (!showCert && !layout) api.getCertificateLayout().then(setLayout).catch(() => {});
     setShowCert((s) => !s);
+  }
+
+  function activate() {
+    if (isActive) return;
+    if (!confirm("Make this membership ACTIVE and email the member their certificate?")) return;
+    onChange(m.id, { status: "active" });
   }
 
   function reject() {
@@ -490,6 +496,7 @@ function Detail({ m, onClose, onChange, onDelete }) {
           {row("Membership No.", m.membership_no)}
           {row("Verified date", m.verified_date)}
           {row("Submitted", new Date(m.created_at).toLocaleString())}
+          {notice && <p className="review-notice">{notice}</p>}
 
           {showCert && (
             <div className="drow drow--block">
@@ -500,11 +507,11 @@ function Detail({ m, onClose, onChange, onDelete }) {
         </div>
 
         <div className="modal__actions">
-          <div className="review-actions">
-            <button className="btn btn--solid" disabled={isActive} onClick={() => onChange(m.id, { status: "active" })}>
+          <div className="seg">
+            <button className={isActive ? "is-on" : ""} disabled={isActive} onClick={activate}>
               Active
             </button>
-            <button className="btn btn--ghost danger" disabled={isRejected} onClick={reject}>
+            <button className={isRejected ? "is-on" : ""} disabled={isRejected} onClick={reject}>
               {isRejected ? "Rejected" : "Reject"}
             </button>
           </div>
@@ -574,6 +581,7 @@ function Dashboard({ onOut }) {
   const [error, setError] = useState("");
   const [certLayout, setCertLayout] = useState(null);
   const [emailingMember, setEmailingMember] = useState(null);
+  const [reviewNotice, setReviewNotice] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -598,6 +606,7 @@ function Dashboard({ onOut }) {
   async function change(id, patch, options = {}) {
     const prev = members.find((x) => x.id === id) || active;
     const wasActive = prev?.status === "active";
+    setReviewNotice("");
     const updated = await api.updateMember(id, patch);
     setMembers((ms) => ms.map((m) => (m.id === id ? updated : m)));
     setActive((a) => (a && a.id === id ? updated : a));
@@ -605,22 +614,34 @@ function Dashboard({ onOut }) {
 
     // Approving (pending/rejected -> active) issues the certificate — email
     // it to the member the same way the self-claim flow does.
-    if (patch.status === "active" && !wasActive && updated.email) {
-      if (!certLayout) {
-        try {
-          setCertLayout(await api.getCertificateLayout());
-        } catch {
-          /* fall back to the canvas's own default layout */
+    if (patch.status === "active" && !wasActive) {
+      if (updated.email) {
+        setReviewNotice("Membership is active. Sending approval email...");
+        if (!certLayout) {
+          try {
+            setCertLayout(await api.getCertificateLayout());
+          } catch {
+            /* fall back to the canvas's own default layout */
+          }
         }
+        setEmailingMember(updated);
+      } else {
+        setReviewNotice("Membership is active. No email address is available, so no approval email was sent.");
       }
-      setEmailingMember(updated);
     }
 
-    if (patch.status === "rejected" && options.rejectionReason && updated.email) {
-      try {
-        await api.emailMemberRejection(updated.id, options.rejectionReason);
-      } catch (e) {
-        console.error("Could not email rejection notice:", e.message);
+    if (patch.status === "rejected" && options.rejectionReason) {
+      if (updated.email) {
+        setReviewNotice("Membership is rejected. Sending rejection email...");
+        try {
+          const res = await api.emailMemberRejection(updated.id, options.rejectionReason);
+          setReviewNotice(res.emailed ? "Membership is rejected and the email has been sent." : "Membership is rejected, but email is not configured.");
+        } catch (e) {
+          setReviewNotice("Membership is rejected, but the rejection email could not be sent.");
+          console.error("Could not email rejection notice:", e.message);
+        }
+      } else {
+        setReviewNotice("Membership is rejected. No email address is available, so no rejection email was sent.");
       }
     }
   }
@@ -630,8 +651,10 @@ function Dashboard({ onOut }) {
     const member = emailingMember;
     setEmailingMember(null);
     try {
-      await api.emailMemberCertificate(member.id, canvasToAttachment(canvas));
+      const res = await api.emailMemberCertificate(member.id, canvasToAttachment(canvas));
+      setReviewNotice(res.emailed ? "Membership is active and the mail has been sent." : "Membership is active, but email is not configured.");
     } catch (e) {
+      setReviewNotice("Membership is active, but the approval email could not be sent.");
       console.error("Could not email approval certificate:", e.message);
     }
   }
@@ -706,7 +729,7 @@ function Dashboard({ onOut }) {
             <motion.button
               key={m.id}
               className="atable__row"
-              onClick={() => setActive(m)}
+              onClick={() => { setActive(m); setReviewNotice(""); }}
               layout
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             >
@@ -731,7 +754,7 @@ function Dashboard({ onOut }) {
       )}
 
       <AnimatePresence>
-        {active && <Detail m={active} onClose={() => setActive(null)} onChange={change} onDelete={remove} />}
+        {active && <Detail m={active} onClose={() => setActive(null)} onChange={change} onDelete={remove} notice={reviewNotice} />}
         {adding && <AddForm onAdd={add} onClose={() => setAdding(false)} />}
       </AnimatePresence>
     </div>
