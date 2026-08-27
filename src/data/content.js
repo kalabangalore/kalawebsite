@@ -4,7 +4,7 @@ export const org = {
   name: "Karnataka State Library Association",
   short: "KALA",
   tagline: "Carrying forward the science of the library, since the days of Ranganathan.",
-  logo: "/logo.png",
+  logo: "/newlogo.png",
   founder: "/founderphoto.png",
   altPhone: "+91 93803 71629",
   email: "karnatakalibraryassociation@gmail.com",

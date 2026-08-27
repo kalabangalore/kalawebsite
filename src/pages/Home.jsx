@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import Lightbox from "../components/Lightbox";
 import NotificationsCarousel from "../components/NotificationsCarousel";
+import Marquee from "../components/Marquee";
 import { useSiteContent } from "../lib/useSiteContent";
 
 // Founder portrait that swaps to a video on click, and back again.
@@ -83,6 +84,8 @@ function Hero({ heroSlides }) {
           Karnataka State Library Association{" "}(R)
         </motion.h1>
       </div>
+
+      <Marquee />
 
       <div className="wrap">
         <div className="hero__bg">

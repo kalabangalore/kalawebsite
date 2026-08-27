@@ -858,6 +858,7 @@ function NoticesEditor() {
               <div className="field">
                 <label>Image URL (shown on the homepage carousel)</label>
                 <input value={draft.image} onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))} placeholder="/carousel/photo.jpg or https://…" />
+                {draft.image && <img src={draft.image} alt="" className="noticeimg-preview" />}
               </div>
             </div>
             <div className="field">
@@ -891,6 +892,7 @@ function NoticesEditor() {
                 <div className="field">
                   <label>Image URL</label>
                   <input value={n.image || ""} onChange={(e) => editLocal(n.id, "image", e.target.value)} placeholder="/carousel/photo.jpg or https://…" />
+                  {n.image && <img src={n.image} alt="" className="noticeimg-preview" />}
                 </div>
               </div>
               <div className="field">

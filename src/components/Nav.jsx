@@ -3,7 +3,6 @@ import { NavLink, Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { useSiteContent } from "../lib/useSiteContent";
 import { DEFAULT_NAV_LINKS } from "../data/siteContentDefaults";
-import Marquee from "./Marquee";
 
 // Route/end-match are fixed in code — never admin-editable, so a bad settings
 // value can never break routing. Only each entry's label text is overlaid
@@ -63,8 +62,6 @@ export default function Nav() {
             <span style={open ? { transform: "translateY(-7px) rotate(-45deg)" } : {}} />
           </button>
         </div>
-
-        <Marquee />
       </header>
 
       <AnimatePresence>

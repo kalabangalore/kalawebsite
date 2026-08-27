@@ -1,18 +1,13 @@
-import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useNotices } from "../lib/useNotices";
 
-// Scrolling strip of the latest notices, rendered inside Nav's fixed header
-// (see Nav.jsx). Renders nothing when there are no notices — no empty bar.
-// Every page reserves top space for this via the --marquee-h CSS variable,
-// which only switches on (see body.has-notices in index.css) while a
-// marquee is actually present, so an empty notices list leaves no gap.
+// Scrolling strip of the latest notices — shown on the Home page only, right
+// below the hero title (see Home.jsx). Each item is individually clickable,
+// jumping straight to that notice's full detail on the Notifications page.
+// Renders nothing when there are no notices.
 export default function Marquee() {
   const notices = useNotices();
-
-  useEffect(() => {
-    document.body.classList.toggle("has-notices", notices.length > 0);
-    return () => document.body.classList.remove("has-notices");
-  }, [notices.length]);
+  const navigate = useNavigate();
 
   if (!notices.length) return null;
 
@@ -22,10 +17,15 @@ export default function Marquee() {
     <div className="marquee" role="region" aria-label="Latest notices">
       <div className="marquee__track">
         {[...items, ...items].map((n, i) => (
-          <span className="marquee__item" key={`${n.id}-${i}`}>
+          <button
+            type="button"
+            className="marquee__item"
+            key={`${n.id}-${i}`}
+            onClick={() => navigate(`/whats-new#notice-${n.id}`)}
+          >
             <b>Notice:</b> {n.title}
             {n.date ? ` — ${n.date}` : ""}
-          </span>
+          </button>
         ))}
       </div>
     </div>
