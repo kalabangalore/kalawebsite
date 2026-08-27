@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { api } from "../lib/api";
+import { useSiteContent } from "../lib/useSiteContent";
 
 const STEP = 60;
 
 export default function Members() {
+  const { pageHeads } = useSiteContent();
   const [q, setQ] = useState("");
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -42,9 +44,9 @@ export default function Members() {
   return (
     <>
       <PageHead
-        crumb={<span>Members</span>}
-        title="The membership roll"
-        lead="More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name — listed in order of membership ID."
+        crumb={<span>{pageHeads.members.crumbLabel}</span>}
+        title={pageHeads.members.title}
+        lead={pageHeads.members.lead}
       />
 
       <section className="section paper-bg">

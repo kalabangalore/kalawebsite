@@ -2,12 +2,12 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
-import { council } from "../data/council";
-
-const ORDER = ["President", "Vice Presidents", "Secretaries", "Treasurer", "Governing Council Members"];
+import { useSiteContent } from "../lib/useSiteContent";
+import { COUNCIL_ROLES } from "../data/siteContentDefaults";
 
 export default function GoverningCouncil() {
-  const groups = ORDER.map((role) => ({
+  const { council, pageHeads } = useSiteContent();
+  const groups = COUNCIL_ROLES.map((role) => ({
     role,
     people: council.filter((c) => c.role === role),
   })).filter((g) => g.people.length);
@@ -15,9 +15,9 @@ export default function GoverningCouncil() {
   return (
     <>
       <PageHead
-        crumb={<span>Governing Council</span>}
-        title="The Executive Councils"
-        lead="The office bearers who steer the Association for the 2024–2026 term."
+        crumb={<span>{pageHeads.governingCouncil.crumbLabel}</span>}
+        title={pageHeads.governingCouncil.title}
+        lead={pageHeads.governingCouncil.lead}
       />
 
       <section className="section paper-bg">

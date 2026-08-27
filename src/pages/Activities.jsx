@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
-import { activities } from "../data/activities";
+import { useSiteContent } from "../lib/useSiteContent";
 
 function fmtDate(iso) {
   const d = new Date(iso + "T00:00:00");
@@ -15,12 +15,13 @@ function fmtDate(iso) {
 const hasLink = (l) => l && /^https?:\/\//.test(l) && !/x{4,}/i.test(l);
 
 export default function Activities() {
+  const { activities, pageHeads } = useSiteContent();
   return (
     <>
       <PageHead
-        crumb={<span>Activities</span>}
-        title="National Library Week 2025"
-        lead="A week of talks, field meets and partner sessions hosted across Karnataka's universities, colleges and research centres."
+        crumb={<span>{pageHeads.activities.crumbLabel}</span>}
+        title={pageHeads.activities.title}
+        lead={pageHeads.activities.lead}
       />
 
       <section className="section paper-bg">

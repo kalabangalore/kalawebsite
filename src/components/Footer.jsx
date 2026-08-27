@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { org } from "../data/content";
 import { useSiteContent } from "../lib/useSiteContent";
 
 export default function Newsletter() {
@@ -27,17 +26,14 @@ export default function Newsletter() {
 }
 
 export function Footer() {
-  const { contact } = useSiteContent();
+  const { contact, org, footer } = useSiteContent();
   return (
     <footer className="footer">
       <div className="wrap">
         <div className="footer__top">
           <div className="footer__brand">
             <img src={org.logo} alt="KALA" />
-            <p>
-              A registered association advancing the library and information science profession across
-              Karnataka — in the lineage of Dr. S. R. Ranganathan.
-            </p>
+            <p>{footer.blurb}</p>
           </div>
           <div className="footer__col">
             <h4>About</h4>
@@ -61,7 +57,7 @@ export function Footer() {
           </div>
         </div>
         <div className="footer__bottom">
-          <span>© {new Date().getFullYear()} Karnataka State Library Association (R). All rights reserved.</span>
+          <span>© {new Date().getFullYear()} {footer.copyright}</span>
           <span><Link to="/admin">Admin</Link> · Books are for use.</span>
         </div>
       </div>

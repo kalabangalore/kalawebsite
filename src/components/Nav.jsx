@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { org } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
+import { DEFAULT_NAV_LINKS } from "../data/siteContentDefaults";
+import Marquee from "./Marquee";
 
-const LINKS = [
-  { to: "/", label: "Home", end: true },
-  { to: "/aims-objectives", label: "Aims" },
-  { to: "/governing-council", label: "Council" },
-  { to: "/members", label: "Members" },
-  { to: "/membership", label: "Membership" },
-  { to: "/activities", label: "Activities" },
-  { to: "/blog", label: "News and Views" },
-  { to: "/whats-new", label: "Notifications" },
-];
+// Route/end-match are fixed in code — never admin-editable, so a bad settings
+// value can never break routing. Only each entry's label text is overlaid
+// from the admin-edited navLabels array, by index.
+const LINKS = DEFAULT_NAV_LINKS;
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -20,6 +16,8 @@ export default function Nav() {
   const loc = useLocation();
   const isHome = loc.pathname === "/";
   const heroNav = isHome && !scrolled;
+  const { org, navLabels } = useSiteContent();
+  const labelFor = (i, fallback) => navLabels[i] ?? fallback;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -40,9 +38,9 @@ export default function Nav() {
           </Link>
 
           <nav className="nav__links">
-            {LINKS.map((l) => (
+            {LINKS.map((l, i) => (
               <NavLink key={l.to} to={l.to} end={l.end} className="nav__link">
-                {l.label}
+                {labelFor(i, l.label)}
               </NavLink>
             ))}
             <Link to="/contact" className="btn btn--solid nav__cta">
@@ -65,6 +63,8 @@ export default function Nav() {
             <span style={open ? { transform: "translateY(-7px) rotate(-45deg)" } : {}} />
           </button>
         </div>
+
+        <Marquee />
       </header>
 
       <AnimatePresence>
@@ -76,9 +76,9 @@ export default function Nav() {
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
-            {LINKS.map((l) => (
+            {LINKS.map((l, i) => (
               <NavLink key={l.to} to={l.to} end={l.end}>
-                {l.label}
+                {labelFor(i, l.label)}
               </NavLink>
             ))}
             <NavLink to="/contact">Contact</NavLink>

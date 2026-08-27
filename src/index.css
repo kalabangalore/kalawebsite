@@ -25,7 +25,9 @@
   --maxw: 1180px;
   --radius: 4px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --marquee-h: 0px; /* set to 32px by body.has-notices below, only while the marquee is actually rendered */
 }
+body.has-notices { --marquee-h: 32px; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -221,6 +223,30 @@ h3 { font-family: var(--primary); font-weight: 600; }
   .nav__burger { display: flex; grid-column: 3; justify-self: end; }
 }
 
+/* ---- notices marquee (inside the fixed nav header) ---- */
+.marquee {
+  height: var(--marquee-h);
+  overflow: hidden;
+  background: var(--brass);
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  gap: 48px;
+  height: 100%;
+  align-items: center;
+  padding-left: 24px;
+  animation: marquee-scroll 26s linear infinite;
+}
+.marquee:hover .marquee__track { animation-play-state: paused; }
+.marquee__item { flex: none; white-space: nowrap; font-size: 12.5px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
+.marquee__item b { font-weight: 700; }
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 /* ============================================================
    Hero
    ============================================================ */
@@ -232,7 +258,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
 }
 
 .hero__top {
-  padding-top: calc(128px + clamp(28px, 4vw, 44px));
+  padding-top: calc(128px + var(--marquee-h) + clamp(28px, 4vw, 44px));
   padding-bottom: clamp(28px, 4vw, 44px);
 }
 .hero__heading {
@@ -258,7 +284,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .hero__dot.is-on { background: var(--brass); transform: scale(1.25); }
 
 @media (max-width: 760px) {
-  .hero__top { padding-top: calc(128px + clamp(20px, 5vw, 32px)); padding-bottom: clamp(20px, 5vw, 32px); }
+  .hero__top { padding-top: calc(128px + var(--marquee-h) + clamp(20px, 5vw, 32px)); padding-bottom: clamp(20px, 5vw, 32px); }
   .hero__heading { padding: 0; }
 }
 
@@ -525,7 +551,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
 /* ============================================================
    Page header (interior pages)
    ============================================================ */
-.pagehead { padding: clamp(130px, 16vw, 190px) 0 clamp(50px, 7vw, 90px); position: relative; overflow: hidden; }
+.pagehead { padding: calc(var(--marquee-h) + clamp(130px, 16vw, 190px)) 0 clamp(50px, 7vw, 90px); position: relative; overflow: hidden; }
 .pagehead::after { content:""; position:absolute; right:-10%; top:-30%; width:50%; height:160%; background: radial-gradient(circle, rgba(194,135,63,0.1), transparent 65%); }
 .pagehead h1 { font-size: clamp(40px, 7vw, 82px); max-width: 16ch; position: relative; }
 .pagehead .lead { margin-top: 22px; position: relative; }

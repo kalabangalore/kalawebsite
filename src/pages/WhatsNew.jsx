@@ -1,14 +1,15 @@
 import PageHead from "../components/PageHead";
 import { Reveal } from "../components/primitives";
-import { whatsNew } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function WhatsNew() {
+  const { whatsNew, pageHeads } = useSiteContent();
   return (
     <>
       <PageHead
-        crumb={<span>What's New</span>}
-        title="What's new"
-        lead="Official notices and circulars from the Association."
+        crumb={<span>{pageHeads.whatsNew.crumbLabel}</span>}
+        title={pageHeads.whatsNew.title}
+        lead={pageHeads.whatsNew.lead}
       />
 
       <section className="section paper-bg">

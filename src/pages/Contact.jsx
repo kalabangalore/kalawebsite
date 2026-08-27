@@ -5,14 +5,14 @@ import { useSiteContent } from "../lib/useSiteContent";
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
-  const { contact } = useSiteContent();
+  const { contact, pageHeads } = useSiteContent();
 
   return (
     <>
       <PageHead
-        crumb={<span>Contact</span>}
-        title="Get in touch"
-        lead="Questions about membership, events or the Association? Write to the General Secretary."
+        crumb={<span>{pageHeads.contact.crumbLabel}</span>}
+        title={pageHeads.contact.title}
+        lead={pageHeads.contact.lead}
       />
 
       <section className="section paper-bg">

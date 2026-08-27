@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { api, getToken, setToken, clearToken } from "../lib/api";
 import CertificateCanvas, { canvasToAttachment } from "../components/CertificateCanvas";
 import { DEFAULT_LAYOUT } from "../lib/certificate";
+import { COUNCIL_ROLES, DEFAULT_NAV_LINKS } from "../data/siteContentDefaults";
 
 const STATUS_LABEL = { pending: "Pending", active: "Active", rejected: "Rejected" };
 const TYPE_LABEL = { life: "Life", institutional: "Institutional", student: "Student" };
@@ -241,9 +242,119 @@ function CertificateLayout() {
   );
 }
 
-/* ------------------------------------------------------------- site content */
-function SiteContentEditor() {
+/* -------------------------------------------------- generic field editors */
+// Reusable across every page's content editor below. `fields` items look
+// like { key, label, type: "text"|"number"|"textarea"|"select"|"paragraphs", options?, full? }.
+function ListEditor({ items, onChange, fields, addDefault, itemLabel }) {
+  function updateItem(i, key, value) {
+    onChange(items.map((it, idx) => (idx === i ? { ...it, [key]: value } : it)));
+  }
+  return (
+    <>
+      {items.map((item, i) => (
+        <div key={i} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 14 }}>
+          {itemLabel && <p className="formnote" style={{ marginBottom: 8 }}>{itemLabel} {i + 1}</p>}
+          <div className="row2">
+            {fields.map((f) => (
+              <div className="field" key={f.key} style={f.full ? { gridColumn: "1 / -1" } : undefined}>
+                <label>{f.label}</label>
+                {f.type === "select" ? (
+                  <select value={item[f.key] || ""} onChange={(e) => updateItem(i, f.key, e.target.value)}>
+                    {f.options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                ) : f.type === "textarea" ? (
+                  <textarea rows="3" value={item[f.key] || ""} onChange={(e) => updateItem(i, f.key, e.target.value)} />
+                ) : f.type === "paragraphs" ? (
+                  <textarea
+                    rows="4"
+                    value={(item[f.key] || []).join("\n\n")}
+                    onChange={(e) =>
+                      updateItem(
+                        i,
+                        f.key,
+                        e.target.value.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean)
+                      )
+                    }
+                  />
+                ) : (
+                  <input
+                    type={f.type === "number" ? "number" : "text"}
+                    value={item[f.key] ?? ""}
+                    onChange={(e) => updateItem(i, f.key, f.type === "number" ? Number(e.target.value) : e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <button type="button" className="btn btn--ghost" style={{ marginTop: 8 }} onClick={() => onChange(items.filter((_, idx) => idx !== i))}>
+            Remove
+          </button>
+        </div>
+      ))}
+      <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={() => onChange([...items, addDefault()])}>
+        + Add {itemLabel ? itemLabel.toLowerCase() : "item"}
+      </button>
+    </>
+  );
+}
+
+function ParagraphsField({ label, value, onChange }) {
+  return (
+    <div className="field" style={{ gridColumn: "1 / -1" }}>
+      <label>{label}</label>
+      <textarea
+        rows="4"
+        value={(value || []).join("\n\n")}
+        onChange={(e) => onChange(e.target.value.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean))}
+      />
+      <p className="formnote">Separate paragraphs with a blank line.</p>
+    </div>
+  );
+}
+
+function PageHeaderFields({ value, onChange, withLead = true }) {
+  return (
+    <fieldset className="mfieldset">
+      <legend>Page header</legend>
+      <div className="row2">
+        <div className="field">
+          <label>Breadcrumb label</label>
+          <input value={value.crumbLabel || ""} onChange={(e) => onChange({ ...value, crumbLabel: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Title</label>
+          <input value={value.title || ""} onChange={(e) => onChange({ ...value, title: e.target.value })} />
+        </div>
+      </div>
+      {withLead && (
+        <div className="field">
+          <label>Lead text</label>
+          <textarea rows="2" value={value.lead || ""} onChange={(e) => onChange({ ...value, lead: e.target.value })} />
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/* ---------------------------------------------------------- page content */
+const CONTENT_PAGES = [
+  "Home",
+  "Aims & Objectives",
+  "Governing Council",
+  "Members",
+  "Membership",
+  "Activities",
+  "Blog",
+  "What's New",
+  "Contact",
+  "Footer & Navigation",
+];
+
+function PageContentEditor() {
   const [content, setContent] = useState(null);
+  const [page, setPage] = useState("Home");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -252,42 +363,45 @@ function SiteContentEditor() {
     api.getSiteContent().then(setContent).catch((e) => setError(e.message));
   }, []);
 
-  function touch() {
+  function set(key, value) {
     setSaved(false);
+    setContent((c) => ({ ...c, [key]: value }));
   }
-
+  function setPageHead(key, value) {
+    setSaved(false);
+    setContent((c) => ({ ...c, pageHeads: { ...c.pageHeads, [key]: value } }));
+  }
   function updateSlide(i, value) {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, heroSlides: c.heroSlides.map((s, idx) => (idx === i ? value : s)) }));
   }
   function addSlide() {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, heroSlides: [...c.heroSlides, ""] }));
   }
   function removeSlide(i) {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, heroSlides: c.heroSlides.filter((_, idx) => idx !== i) }));
   }
-
   function updateBanner(i, field, value) {
-    touch();
-    setContent((c) => ({
-      ...c,
-      banners: c.banners.map((b, idx) => (idx === i ? { ...b, [field]: value } : b)),
-    }));
+    setSaved(false);
+    setContent((c) => ({ ...c, banners: c.banners.map((b, idx) => (idx === i ? { ...b, [field]: value } : b)) }));
   }
   function addBanner() {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, banners: [...c.banners, { img: "", title: "", kicker: "" }] }));
   }
   function removeBanner(i) {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, banners: c.banners.filter((_, idx) => idx !== i) }));
   }
-
   function updateContact(field, value) {
-    touch();
+    setSaved(false);
     setContent((c) => ({ ...c, contact: { ...c.contact, [field]: value } }));
+  }
+  function updateOrg(field, value) {
+    setSaved(false);
+    setContent((c) => ({ ...c, org: { ...c.org, [field]: value } }));
   }
 
   async function save() {
@@ -307,72 +421,450 @@ function SiteContentEditor() {
 
   return (
     <div className="certlayout">
-      <div className="certlayout__fields" style={{ maxWidth: 720 }}>
-        <fieldset className="mfieldset">
-          <legend>Home carousel photos</legend>
-          <p className="formnote">Image URLs shown in the homepage hero carousel, in order.</p>
-          {content.heroSlides.map((src, i) => (
-            <div className="row2" key={i}>
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>Photo {i + 1}</label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input value={src} onChange={(e) => updateSlide(i, e.target.value)} placeholder="/carousel/1.jpeg or https://…" />
-                  <button type="button" className="btn btn--ghost" onClick={() => removeSlide(i)}>Remove</button>
-                </div>
-              </div>
-            </div>
-          ))}
-          <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addSlide}>
-            + Add photo
+      <div className="seg" style={{ marginBottom: 20, flexWrap: "wrap", rowGap: 8 }}>
+        {CONTENT_PAGES.map((p) => (
+          <button key={p} className={page === p ? "is-on" : ""} onClick={() => setPage(p)}>
+            {p}
           </button>
-        </fieldset>
+        ))}
+      </div>
 
-        <fieldset className="mfieldset">
-          <legend>"In the field" banners</legend>
-          {content.banners.map((b, i) => (
-            <div key={i} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 4 }}>
-              <div className="field">
-                <label>Image URL</label>
-                <input value={b.img} onChange={(e) => updateBanner(i, "img", e.target.value)} placeholder="/banners/photo.jpg or https://…" />
+      <div className="certlayout__fields" style={{ maxWidth: 720 }}>
+        {page === "Home" && (
+          <>
+            <fieldset className="mfieldset">
+              <legend>Organisation</legend>
+              <div className="row2">
+                <div className="field">
+                  <label>Name</label>
+                  <input value={content.org.name} onChange={(e) => updateOrg("name", e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Tagline</label>
+                  <input value={content.org.tagline} onChange={(e) => updateOrg("tagline", e.target.value)} />
+                </div>
               </div>
               <div className="row2">
                 <div className="field">
-                  <label>Title</label>
-                  <input value={b.title} onChange={(e) => updateBanner(i, "title", e.target.value)} />
+                  <label>Logo image URL</label>
+                  <input value={content.org.logo} onChange={(e) => updateOrg("logo", e.target.value)} />
                 </div>
                 <div className="field">
-                  <label>Kicker</label>
-                  <input value={b.kicker} onChange={(e) => updateBanner(i, "kicker", e.target.value)} />
+                  <label>Founder photo URL</label>
+                  <input value={content.org.founder} onChange={(e) => updateOrg("founder", e.target.value)} />
                 </div>
               </div>
-              <button type="button" className="btn btn--ghost" onClick={() => removeBanner(i)}>Remove banner</button>
-            </div>
-          ))}
-          <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addBanner}>
-            + Add banner
-          </button>
-        </fieldset>
+            </fieldset>
 
-        <fieldset className="mfieldset">
-          <legend>Contact details</legend>
-          <div className="field">
-            <label>Phone</label>
-            <input value={content.contact.altPhone} onChange={(e) => updateContact("altPhone", e.target.value)} />
-          </div>
-          <div className="field">
-            <label>E-mail</label>
-            <input value={content.contact.email} onChange={(e) => updateContact("email", e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Address</label>
-            <textarea rows="3" value={content.contact.address} onChange={(e) => updateContact("address", e.target.value)} />
-          </div>
-        </fieldset>
+            <fieldset className="mfieldset">
+              <legend>Home carousel photos</legend>
+              <p className="formnote">Image URLs shown in the homepage hero carousel, in order.</p>
+              {content.heroSlides.map((src, i) => (
+                <div className="row2" key={i}>
+                  <div className="field" style={{ gridColumn: "1 / -1" }}>
+                    <label>Photo {i + 1}</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input value={src} onChange={(e) => updateSlide(i, e.target.value)} placeholder="/carousel/1.jpeg or https://…" />
+                      <button type="button" className="btn btn--ghost" onClick={() => removeSlide(i)}>Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addSlide}>
+                + Add photo
+              </button>
+            </fieldset>
+
+            <fieldset className="mfieldset">
+              <legend>Stats strip</legend>
+              <ListEditor
+                items={content.stats}
+                onChange={(v) => set("stats", v)}
+                itemLabel="Stat"
+                addDefault={() => ({ value: 0, suffix: "", label: "" })}
+                fields={[
+                  { key: "value", label: "Value", type: "number" },
+                  { key: "suffix", label: "Suffix", type: "text" },
+                  { key: "label", label: "Label", type: "text", full: true },
+                ]}
+              />
+            </fieldset>
+
+            <fieldset className="mfieldset">
+              <legend>About section</legend>
+              <div className="field">
+                <label>Title</label>
+                <input value={content.homeAbout.title} onChange={(e) => set("homeAbout", { ...content.homeAbout, title: e.target.value })} />
+              </div>
+              <ParagraphsField
+                label="Body"
+                value={content.homeAbout.body}
+                onChange={(v) => set("homeAbout", { ...content.homeAbout, body: v })}
+              />
+            </fieldset>
+
+            <fieldset className="mfieldset">
+              <legend>Ranganathan's Five Laws</legend>
+              <p className="formnote">Also shown on the Aims & Objectives page.</p>
+              <ListEditor
+                items={content.fiveLaws}
+                onChange={(v) => set("fiveLaws", v)}
+                itemLabel="Law"
+                addDefault={() => ({ n: String(content.fiveLaws.length + 1).padStart(2, "0"), law: "", note: "" })}
+                fields={[
+                  { key: "n", label: "No.", type: "text" },
+                  { key: "law", label: "Law", type: "text", full: true },
+                  { key: "note", label: "Note", type: "textarea", full: true },
+                ]}
+              />
+            </fieldset>
+
+            <fieldset className="mfieldset">
+              <legend>Objectives grid</legend>
+              <ListEditor
+                items={content.objectivesShort}
+                onChange={(v) => set("objectivesShort", v)}
+                itemLabel="Objective"
+                addDefault={() => ({ n: String(content.objectivesShort.length + 1).padStart(2, "0"), title: "", body: "" })}
+                fields={[
+                  { key: "n", label: "No.", type: "text" },
+                  { key: "title", label: "Title", type: "text" },
+                  { key: "body", label: "Body", type: "textarea", full: true },
+                ]}
+              />
+            </fieldset>
+
+            <fieldset className="mfieldset">
+              <legend>"In the field" banners</legend>
+              {content.banners.map((b, i) => (
+                <div key={i} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 4 }}>
+                  <div className="field">
+                    <label>Image URL</label>
+                    <input value={b.img} onChange={(e) => updateBanner(i, "img", e.target.value)} placeholder="/banners/photo.jpg or https://…" />
+                  </div>
+                  <div className="row2">
+                    <div className="field">
+                      <label>Title</label>
+                      <input value={b.title} onChange={(e) => updateBanner(i, "title", e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label>Kicker</label>
+                      <input value={b.kicker} onChange={(e) => updateBanner(i, "kicker", e.target.value)} />
+                    </div>
+                  </div>
+                  <button type="button" className="btn btn--ghost" onClick={() => removeBanner(i)}>Remove banner</button>
+                </div>
+              ))}
+              <button type="button" className="btn btn--ghost" style={{ alignSelf: "flex-start" }} onClick={addBanner}>
+                + Add banner
+              </button>
+            </fieldset>
+          </>
+        )}
+
+        {page === "Aims & Objectives" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.aimsObjectives} onChange={(v) => setPageHead("aimsObjectives", v)} withLead={false} />
+            <fieldset className="mfieldset">
+              <legend>Introduction</legend>
+              <textarea rows="3" value={content.aims.intro} onChange={(e) => set("aims", { ...content.aims, intro: e.target.value })} />
+            </fieldset>
+            <fieldset className="mfieldset">
+              <legend>Clauses</legend>
+              <ListEditor
+                items={content.aims.clauses}
+                onChange={(v) => set("aims", { ...content.aims, clauses: v })}
+                itemLabel="Clause"
+                addDefault={() => ({ tag: String.fromCharCode(97 + content.aims.clauses.length), text: "" })}
+                fields={[
+                  { key: "tag", label: "Tag", type: "text" },
+                  { key: "text", label: "Text", type: "textarea", full: true },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "Governing Council" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.governingCouncil} onChange={(v) => setPageHead("governingCouncil", v)} />
+            <fieldset className="mfieldset">
+              <legend>Council members</legend>
+              <p className="formnote">Role must be one of the fixed groups below — it controls how members are grouped on the Governing Council page.</p>
+              <ListEditor
+                items={content.council}
+                onChange={(v) => set("council", v)}
+                itemLabel="Member"
+                addDefault={() => ({ role: COUNCIL_ROLES[COUNCIL_ROLES.length - 1], name: "", img: "", detail: "", email: "", phone: "" })}
+                fields={[
+                  { key: "role", label: "Role", type: "select", options: COUNCIL_ROLES },
+                  { key: "name", label: "Name", type: "text" },
+                  { key: "img", label: "Photo URL", type: "text" },
+                  { key: "detail", label: "Detail", type: "textarea", full: true },
+                  { key: "email", label: "E-mail", type: "text" },
+                  { key: "phone", label: "Phone", type: "text" },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "Members" && <PageHeaderFields value={content.pageHeads.members} onChange={(v) => setPageHead("members", v)} />}
+
+        {page === "Membership" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.membership} onChange={(v) => setPageHead("membership", v)} withLead={false} />
+            <fieldset className="mfieldset">
+              <legend>Introduction</legend>
+              <textarea rows="3" value={content.membership.intro} onChange={(e) => set("membership", { ...content.membership, intro: e.target.value })} />
+            </fieldset>
+            <fieldset className="mfieldset">
+              <legend>Membership classes</legend>
+              <ListEditor
+                items={content.membership.classes}
+                onChange={(v) => set("membership", { ...content.membership, classes: v })}
+                itemLabel="Class"
+                addDefault={() => ({ name: "", body: "" })}
+                fields={[
+                  { key: "name", label: "Name", type: "text", full: true },
+                  { key: "body", label: "Body", type: "textarea", full: true },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "Activities" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.activities} onChange={(v) => setPageHead("activities", v)} />
+            <fieldset className="mfieldset">
+              <legend>Schedule</legend>
+              <ListEditor
+                items={content.activities}
+                onChange={(v) => set("activities", v)}
+                itemLabel="Event"
+                addDefault={() => ({ date: "", day: "", venue: "", speaker: "", time: "", link: "" })}
+                fields={[
+                  { key: "date", label: "Date (YYYY-MM-DD)", type: "text" },
+                  { key: "day", label: "Day", type: "text" },
+                  { key: "venue", label: "Venue", type: "textarea", full: true },
+                  { key: "speaker", label: "Speaker / coordinator", type: "textarea", full: true },
+                  { key: "time", label: "Time", type: "text" },
+                  { key: "link", label: "Registration link", type: "text" },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "Blog" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.blog} onChange={(v) => setPageHead("blog", v)} />
+            <fieldset className="mfieldset">
+              <legend>Posts</legend>
+              <ListEditor
+                items={content.blog}
+                onChange={(v) => set("blog", v)}
+                itemLabel="Post"
+                addDefault={() => ({ slug: "", title: "", excerpt: "", img: "", date: "", body: [] })}
+                fields={[
+                  { key: "slug", label: "Slug (used in the URL)", type: "text" },
+                  { key: "date", label: "Date", type: "text" },
+                  { key: "title", label: "Title", type: "text", full: true },
+                  { key: "excerpt", label: "Excerpt", type: "textarea", full: true },
+                  { key: "img", label: "Image URL", type: "text", full: true },
+                  { key: "body", label: "Body", type: "paragraphs", full: true },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "What's New" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.whatsNew} onChange={(v) => setPageHead("whatsNew", v)} />
+            <fieldset className="mfieldset">
+              <legend>Notices</legend>
+              <ListEditor
+                items={content.whatsNew}
+                onChange={(v) => set("whatsNew", v)}
+                itemLabel="Notice"
+                addDefault={() => ({ title: "", meta: "", body: [], signoff: "" })}
+                fields={[
+                  { key: "title", label: "Title", type: "text", full: true },
+                  { key: "meta", label: "Meta (venue/subtitle)", type: "text", full: true },
+                  { key: "body", label: "Body", type: "paragraphs", full: true },
+                  { key: "signoff", label: "Sign-off", type: "text", full: true },
+                ]}
+              />
+            </fieldset>
+          </>
+        )}
+
+        {page === "Contact" && (
+          <>
+            <PageHeaderFields value={content.pageHeads.contact} onChange={(v) => setPageHead("contact", v)} />
+            <fieldset className="mfieldset">
+              <legend>Contact details</legend>
+              <div className="field">
+                <label>Phone</label>
+                <input value={content.contact.altPhone} onChange={(e) => updateContact("altPhone", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>E-mail</label>
+                <input value={content.contact.email} onChange={(e) => updateContact("email", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Address</label>
+                <textarea rows="3" value={content.contact.address} onChange={(e) => updateContact("address", e.target.value)} />
+              </div>
+            </fieldset>
+          </>
+        )}
+
+        {page === "Footer & Navigation" && (
+          <>
+            <fieldset className="mfieldset">
+              <legend>Footer</legend>
+              <div className="field">
+                <label>Blurb</label>
+                <textarea rows="3" value={content.footer.blurb} onChange={(e) => set("footer", { ...content.footer, blurb: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>Copyright line (shown after the year)</label>
+                <input value={content.footer.copyright} onChange={(e) => set("footer", { ...content.footer, copyright: e.target.value })} />
+              </div>
+            </fieldset>
+            <fieldset className="mfieldset">
+              <legend>Navigation labels</legend>
+              <p className="formnote">Only the label text is editable — each link's destination is fixed.</p>
+              {DEFAULT_NAV_LINKS.map((l, i) => (
+                <div className="field" key={l.to}>
+                  <label>{l.to}</label>
+                  <input
+                    value={content.navLabels[i] ?? l.label}
+                    onChange={(e) => set("navLabels", content.navLabels.map((v, idx) => (idx === i ? e.target.value : v)))}
+                  />
+                </div>
+              ))}
+            </fieldset>
+          </>
+        )}
 
         {error && <p className="formnote" style={{ color: "#b3402f" }}>{error}</p>}
         <button className="btn btn--solid" disabled={saving} onClick={save} style={{ alignSelf: "flex-start" }}>
           {saving ? "Saving…" : saved ? "Saved ✓" : "Save changes"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ notices */
+function NoticesEditor() {
+  const [notices, setNotices] = useState(null);
+  const [draft, setDraft] = useState({ title: "", body: "", date: "" });
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.getNotices().then((r) => setNotices(r.notices)).catch((e) => setError(e.message));
+  }, []);
+
+  async function add(e) {
+    e.preventDefault();
+    if (!draft.title.trim()) return;
+    setAdding(true);
+    setError("");
+    try {
+      const created = await api.addNotice(draft);
+      setNotices((n) => [created, ...n]);
+      setDraft({ title: "", body: "", date: "" });
+    } catch (e2) {
+      setError(e2.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function save(n) {
+    setError("");
+    try {
+      const updated = await api.updateNotice(n.id, { title: n.title, body: n.body, date: n.date });
+      setNotices((list) => list.map((x) => (x.id === n.id ? updated : x)));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function remove(id) {
+    if (!confirm("Delete this notice?")) return;
+    setError("");
+    try {
+      await api.deleteNotice(id);
+      setNotices((list) => list.filter((n) => n.id !== id));
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  function editLocal(id, field, value) {
+    setNotices((list) => list.map((n) => (n.id === id ? { ...n, [field]: value } : n)));
+  }
+
+  if (!notices) return <p className="formnote" style={{ padding: "24px 8px" }}>Loading notices…</p>;
+
+  return (
+    <div className="certlayout">
+      <div className="certlayout__fields" style={{ maxWidth: 720 }}>
+        <fieldset className="mfieldset">
+          <legend>Add a notice</legend>
+          <p className="formnote">Shows in the scrolling notices strip at the top of every page, most recent first.</p>
+          <form onSubmit={add}>
+            <div className="field">
+              <label>Title *</label>
+              <input required value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Date (free text, e.g. "5 March 2026")</label>
+              <input value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Body (optional)</label>
+              <textarea rows="2" value={draft.body} onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))} />
+            </div>
+            <button className="btn btn--solid" disabled={adding} style={{ marginTop: 10 }}>
+              {adding ? "Adding…" : "+ Add notice"}
+            </button>
+          </form>
+        </fieldset>
+
+        <fieldset className="mfieldset">
+          <legend>Current notices</legend>
+          {notices.length === 0 && <p className="formnote">No notices yet.</p>}
+          {notices.map((n) => (
+            <div key={n.id} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 14, marginBottom: 14 }}>
+              <div className="field">
+                <label>Title</label>
+                <input value={n.title} onChange={(e) => editLocal(n.id, "title", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Date</label>
+                <input value={n.date || ""} onChange={(e) => editLocal(n.id, "date", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Body</label>
+                <textarea rows="2" value={n.body || ""} onChange={(e) => editLocal(n.id, "body", e.target.value)} />
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="button" className="btn btn--ghost" onClick={() => save(n)}>Save</button>
+                <button type="button" className="btn btn--ghost danger" onClick={() => remove(n.id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </fieldset>
+
+        {error && <p className="formnote" style={{ color: "#b3402f" }}>{error}</p>}
       </div>
     </div>
   );
@@ -570,7 +1062,7 @@ function AddForm({ onAdd, onClose }) {
 
 /* ------------------------------------------------------------------ dashboard */
 function Dashboard({ onOut }) {
-  const [view, setView] = useState("members"); // members | layout | content
+  const [view, setView] = useState("members"); // members | layout | content | notices
   const [stats, setStats] = useState(null);
   const [members, setMembers] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -683,7 +1175,8 @@ function Dashboard({ onOut }) {
           <div className="seg">
             <button className={view === "members" ? "is-on" : ""} onClick={() => setView("members")}>Members</button>
             <button className={view === "layout" ? "is-on" : ""} onClick={() => setView("layout")}>Certificate layout</button>
-            <button className={view === "content" ? "is-on" : ""} onClick={() => setView("content")}>Site content</button>
+            <button className={view === "content" ? "is-on" : ""} onClick={() => setView("content")}>Page content</button>
+            <button className={view === "notices" ? "is-on" : ""} onClick={() => setView("notices")}>Notices</button>
           </div>
           {view === "members" && <button className="btn btn--solid" onClick={() => setAdding(true)}>+ Add member</button>}
           <button className="btn btn--ghost" onClick={() => { clearToken(); onOut(); }}>Sign out</button>
@@ -693,7 +1186,9 @@ function Dashboard({ onOut }) {
       {view === "layout" ? (
         <CertificateLayout />
       ) : view === "content" ? (
-        <SiteContentEditor />
+        <PageContentEditor />
+      ) : view === "notices" ? (
+        <NoticesEditor />
       ) : (
       <>
       <div className="admin__stats">

@@ -1,10 +1,11 @@
 import { useParams, Link, Navigate } from "react-router-dom";
 import PageHead from "../components/PageHead";
 import { Reveal } from "../components/primitives";
-import { blog } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function BlogPost() {
   const { slug } = useParams();
+  const { blog } = useSiteContent();
   const post = blog.find((p) => p.slug === slug);
 
   if (!post) return <Navigate to="/blog" replace />;

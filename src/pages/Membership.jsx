@@ -2,17 +2,18 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
-import { membership } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 import MembershipForm from "../components/MembershipForm";
 import LegacyMemberAccess from "../components/LegacyMemberAccess";
 
 export default function Membership() {
   const [tab, setTab] = useState("new"); // new | existing
+  const { membership, pageHeads } = useSiteContent();
   return (
     <>
       <PageHead
-        crumb={<span>Membership</span>}
-        title="Join the Association"
+        crumb={<span>{pageHeads.membership.crumbLabel}</span>}
+        title={pageHeads.membership.title}
         lead={membership.intro}
       />
 

@@ -17,3 +17,10 @@ export function genMembershipNo(member) {
   const padded = String(member.id).padStart(6, "0");
   return `KALA-${initial}-${year}-${padded}`;
 }
+
+// Internal id for a notice — never shown to anyone, just a stable React/DB
+// key, so a plain UUID is enough (unlike genCertRef, which is a short code
+// a member has to type in).
+export function genNoticeId() {
+  return crypto.randomUUID();
+}

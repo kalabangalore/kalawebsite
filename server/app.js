@@ -3,19 +3,11 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { q, initSchema, WRITABLE, ADMIN_WRITABLE } from "./db.js";
-import { DEFAULT_LAYOUT, genCertRef, genMembershipNo } from "./certificate.js";
-import { heroSlides, banners, org } from "../src/data/content.js";
+import { DEFAULT_LAYOUT, genCertRef, genMembershipNo, genNoticeId } from "./certificate.js";
+import { DEFAULT_SITE_CONTENT } from "../src/data/siteContentDefaults.js";
 import { hashPin, verifyPin } from "./pin.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
-
-// Editable home-page content (carousel/banners/contact) — falls back to the
-// same values baked into src/data/content.js until an admin saves an override.
-const DEFAULT_SITE_CONTENT = {
-  heroSlides,
-  banners,
-  contact: { altPhone: org.altPhone, email: org.email, address: org.address },
-};
 
 // Fields a self-claiming legacy member may fill in themselves.
 const CLAIM_FIELDS = ["email", "mobile", "date_of_birth", "designation", "membership_type"];
@@ -598,10 +590,17 @@ app.post("/api/legacy-members/:id/email-certificate", async (req, res) => {
   }
 });
 
-// Public: current home-page content (carousel, banners, contact details).
+// Public: content for every page (carousel, banners, contact details, and
+// every other page's text/data — see DEFAULT_SITE_CONTENT).
 app.get("/api/site-content", async (_req, res) => {
   const { rows } = await q(`SELECT value FROM settings WHERE key = 'site_content'`);
   res.json({ ...DEFAULT_SITE_CONTENT, ...(rows[0]?.value || {}) });
+});
+
+// Public: the notices board — powers the marquee and any future notices page.
+app.get("/api/notices", async (_req, res) => {
+  const { rows } = await q(`SELECT value FROM settings WHERE key = 'notices'`);
+  res.json({ notices: rows[0]?.value || [] });
 });
 
 // Public: look up a member's certificate by their reference code.
@@ -780,19 +779,94 @@ app.delete("/api/admin/certificate/layout/pending", auth, async (_req, res) => {
   res.json({ ok: true });
 });
 
-// Admin: update the home-page carousel/banners/contact details (reads
-// happen via the public GET /api/site-content above).
+// Admin: update any page's content (reads happen via the public
+// GET /api/site-content above). A shallow top-level merge onto whatever's
+// already stored — not a full replace — so a panel that saves only the
+// section it's editing (e.g. just `council`) can never wipe out sections
+// saved by a different panel (e.g. `heroSlides`/`banners`).
 app.put("/api/admin/site-content", auth, async (req, res) => {
   try {
+    const { rows } = await q(`SELECT value FROM settings WHERE key = 'site_content'`);
+    const merged = { ...(rows[0]?.value || {}), ...req.body };
     await q(
       `INSERT INTO settings (key, value, updated_at) VALUES ('site_content', $1, now())
        ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
-      [JSON.stringify(req.body)]
+      [JSON.stringify(merged)]
     );
-    res.json({ ok: true });
+    res.json({ ok: true, value: merged });
   } catch (err) {
     console.error("site content update error:", err.message);
     res.status(500).json({ error: "Could not save site content" });
+  }
+});
+
+// Admin: notices board (title/body/date) — separate from the page-content
+// settings above since it's a frequently-mutated list of discrete items,
+// not rarely-edited page copy. Powers the public notices marquee.
+app.post("/api/admin/notices", auth, async (req, res) => {
+  try {
+    const title = String(req.body?.title || "").trim();
+    if (!title) return res.status(400).json({ error: "Title is required" });
+    const { rows } = await q(`SELECT value FROM settings WHERE key = 'notices'`);
+    const notices = rows[0]?.value || [];
+    const notice = {
+      id: genNoticeId(),
+      title,
+      body: req.body.body || "",
+      date: req.body.date || "",
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [notice, ...notices];
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('notices', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(updated)]
+    );
+    res.status(201).json(notice);
+  } catch (err) {
+    console.error("notice create error:", err.message);
+    res.status(500).json({ error: "Could not create notice" });
+  }
+});
+
+app.put("/api/admin/notices/:id", auth, async (req, res) => {
+  try {
+    const { rows } = await q(`SELECT value FROM settings WHERE key = 'notices'`);
+    const notices = rows[0]?.value || [];
+    const idx = notices.findIndex((n) => n.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: "Notice not found" });
+    const { title, body, date } = req.body;
+    const next = { ...notices[idx] };
+    if (title !== undefined) next.title = String(title).trim();
+    if (body !== undefined) next.body = body;
+    if (date !== undefined) next.date = date;
+    const updated = notices.map((n, i) => (i === idx ? next : n));
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('notices', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(updated)]
+    );
+    res.json(next);
+  } catch (err) {
+    console.error("notice update error:", err.message);
+    res.status(500).json({ error: "Could not update notice" });
+  }
+});
+
+app.delete("/api/admin/notices/:id", auth, async (req, res) => {
+  try {
+    const { rows } = await q(`SELECT value FROM settings WHERE key = 'notices'`);
+    const notices = rows[0]?.value || [];
+    const updated = notices.filter((n) => n.id !== req.params.id);
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ('notices', $1, now())
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`,
+      [JSON.stringify(updated)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("notice delete error:", err.message);
+    res.status(500).json({ error: "Could not delete notice" });
   }
 });
 

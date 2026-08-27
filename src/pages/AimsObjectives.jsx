@@ -1,14 +1,15 @@
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Reveal, Stagger, stagItem } from "../components/primitives";
-import { aims, fiveLaws } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function AimsObjectives() {
+  const { aims, fiveLaws, pageHeads } = useSiteContent();
   return (
     <>
       <PageHead
-        crumb={<span>Aims & Objectives</span>}
-        title="Aims & Objectives"
+        crumb={<span>{pageHeads.aimsObjectives.crumbLabel}</span>}
+        title={pageHeads.aimsObjectives.title}
         lead={aims.intro}
       />
 

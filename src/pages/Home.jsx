@@ -1,16 +1,12 @@
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import Lightbox from "../components/Lightbox";
-import { org, stats, fiveLaws, homeAbout, objectivesShort } from "../data/content";
-import { council } from "../data/council";
 import { useSiteContent } from "../lib/useSiteContent";
 
-const officers = council.filter((c) => c.role !== "Governing Council Members");
-
 // Founder portrait that swaps to a video on click, and back again.
-function FounderMedia() {
+function FounderMedia({ founder }) {
   const [playing, setPlaying] = useState(false);
 
   return (
@@ -26,7 +22,7 @@ function FounderMedia() {
         >
           <video
             src="/founder-video.mp4"
-            poster={org.founder}
+            poster={founder}
             controls
             autoPlay
             playsInline
@@ -51,7 +47,7 @@ function FounderMedia() {
             onClick={() => setPlaying(true)}
             aria-label="Play the film about Dr. S. R. Ranganathan"
           >
-            <img src={org.founder} alt="Dr. S. R. Ranganathan" />
+            <img src={founder} alt="Dr. S. R. Ranganathan" />
             <span className="frame" />
             <span className="plate">
               <span className="plate__name">Dr. S. R. Ranganathan</span>
@@ -111,7 +107,8 @@ function Hero({ heroSlides }) {
 
 export default function Home() {
   const [lightbox, setLightbox] = useState(null);
-  const { heroSlides, banners } = useSiteContent();
+  const { heroSlides, banners, org, stats, fiveLaws, homeAbout, objectivesShort, council } = useSiteContent();
+  const officers = useMemo(() => council.filter((c) => c.role !== "Governing Council Members"), [council]);
 
   return (
     <>
@@ -145,7 +142,7 @@ export default function Home() {
             <Link to="/aims-objectives" className="btn btn--ghost mt-l">Read our aims & objectives</Link>
           </Reveal>
           <Reveal delay={0.1} className="split__media">
-            <FounderMedia />
+            <FounderMedia founder={org.founder} />
           </Reveal>
         </div>
       </section>

@@ -81,4 +81,9 @@ export const api = {
 
   getSiteContent: () => request("/site-content"),
   updateSiteContent: (body) => request("/admin/site-content", { method: "PUT", body, auth: true }),
+
+  getNotices: () => request("/notices"),
+  addNotice: (body) => request("/admin/notices", { method: "POST", body, auth: true }),
+  updateNotice: (id, body) => request(`/admin/notices/${id}`, { method: "PUT", body, auth: true }),
+  deleteNotice: (id) => request(`/admin/notices/${id}`, { method: "DELETE", auth: true }),
 };

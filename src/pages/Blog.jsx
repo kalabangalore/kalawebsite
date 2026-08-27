@@ -2,15 +2,16 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import PageHead from "../components/PageHead";
 import { Stagger, stagItem } from "../components/primitives";
-import { blog } from "../data/content";
+import { useSiteContent } from "../lib/useSiteContent";
 
 export default function Blog() {
+  const { blog, pageHeads } = useSiteContent();
   return (
     <>
       <PageHead
-        crumb={<span>Blog</span>}
-        title="News and Views"
-        lead="Notes from the Association — conferences, library weeks, and the ideas that move the profession forward."
+        crumb={<span>{pageHeads.blog.crumbLabel}</span>}
+        title={pageHeads.blog.title}
+        lead={pageHeads.blog.lead}
       />
 
       <section className="section paper-bg">

@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { heroSlides as defaultHeroSlides, banners as defaultBanners, org } from "../data/content";
-
-const DEFAULT_CONTENT = {
-  heroSlides: defaultHeroSlides,
-  banners: defaultBanners,
-  contact: { altPhone: org.altPhone, email: org.email, address: org.address },
-};
+import { DEFAULT_SITE_CONTENT } from "../data/siteContentDefaults";
 
 // Fetched once per page load and shared across every component that calls
-// this hook, so Home/Footer/Contact don't each trigger their own request.
+// this hook, so Home/Footer/Contact/etc. don't each trigger their own request.
 let cached = null;
 function fetchOnce() {
-  if (!cached) cached = api.getSiteContent().catch(() => DEFAULT_CONTENT);
+  if (!cached) cached = api.getSiteContent().catch(() => DEFAULT_SITE_CONTENT);
   return cached;
 }
 
 export function useSiteContent() {
-  const [content, setContent] = useState(DEFAULT_CONTENT);
+  const [content, setContent] = useState(DEFAULT_SITE_CONTENT);
   useEffect(() => {
     let alive = true;
     fetchOnce().then((c) => {
