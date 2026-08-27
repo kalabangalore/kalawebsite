@@ -33,7 +33,10 @@ export default function Nav() {
         <div className="nav__inner">
           <Link to="/" className="nav__brand" aria-label="KALA home">
             <img src={org.logo} alt="KALA" />
-            <span className="nav__brand-reg">Reg. No. 829/88-89</span>
+            <span className="nav__brand-text">
+              <span className="nav__brand-name">{org.name}</span>
+              <span className="nav__brand-reg">Reg. No. 829/88-89</span>
+            </span>
           </Link>
 
           <nav className="nav__links">
