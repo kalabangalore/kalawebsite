@@ -440,6 +440,29 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .catcard__meta { margin-top: auto; padding-top: 10px; font-family: var(--secondary); font-size: 11.5px; color: var(--text-dark); border-top: 1px dashed var(--line-dark); }
 .catcard__meta a:hover { color: #9a6a28; }
 
+/* homepage notifications carousel */
+.notifcarousel { position: relative; aspect-ratio: 21/9; max-height: 440px; min-height: 260px; border-radius: var(--radius); overflow: hidden; margin-top: 8px; }
+.notifcarousel__card { position: absolute; inset: 0; width: 100%; height: 100%; display: block; text-align: left; cursor: pointer; border: none; padding: 0; background: none; }
+.notifcarousel__media { position: absolute; inset: 0; background-color: var(--ink-2); background-size: cover; background-position: center; }
+.notifcarousel__media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(15,31,27,0.94)); }
+.notifcarousel__ph { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--primary); font-size: 90px; font-weight: 700; color: rgba(244,240,230,0.08); }
+.notifcarousel__body { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: clamp(22px,4vw,44px); max-width: 640px; }
+.notifcarousel__date { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brass-soft); }
+.notifcarousel__body h3 { font-family: var(--primary); font-size: clamp(22px,3vw,32px); color: var(--text); margin-top: 6px; line-height: 1.15; }
+.notifcarousel__body p { font-size: 14.5px; line-height: 1.6; color: var(--muted); margin-top: 10px; max-width: 56ch; }
+.notifcarousel__more { display: inline-block; margin-top: 14px; font-family: var(--secondary); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass-soft); }
+.notifcarousel__dots { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+.notifcarousel__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-dark); transition: background 0.3s, transform 0.3s; }
+.notifcarousel__dot:hover { background: var(--brass-soft); }
+.notifcarousel__dot.is-on { background: var(--brass); transform: scale(1.25); }
+@media (max-width: 760px) {
+  .notifcarousel { aspect-ratio: 4/5; max-height: 480px; }
+  .notifcarousel__body { max-width: 100%; }
+}
+
+/* notice detail image (What's New) */
+.notice__img { width: 100%; border-radius: var(--radius); margin: 6px 0 10px; }
+
 /* role group heading */
 .rolehead { display: flex; align-items: center; gap: 16px; margin: 56px 0 28px; }
 .rolehead:first-of-type { margin-top: 0; }
@@ -609,7 +632,11 @@ h3 { font-family: var(--primary); font-weight: 600; }
 /* ============================================================
    Notice cards (what's new)
    ============================================================ */
-.notice { background: var(--paper-2); border: 1px solid var(--line-dark); border-top: 3px solid var(--brass); border-radius: var(--radius); padding: clamp(28px,4vw,48px); }
+.notice {
+  background: var(--paper-2); border: 1px solid var(--line-dark); border-top: 3px solid var(--brass); border-radius: var(--radius); padding: clamp(28px,4vw,48px);
+  /* so scrollIntoView (used for deep links from the notifications carousel) doesn't tuck the title under the fixed nav/marquee */
+  scroll-margin-top: calc(128px + var(--marquee-h) + 24px);
+}
 .notice + .notice { margin-top: 26px; }
 .notice .tag { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #9a6a28; }
 .notice h3 { font-family: var(--primary); font-size: clamp(26px,3.4vw,38px); color: var(--text-dark); margin: 10px 0 6px; }

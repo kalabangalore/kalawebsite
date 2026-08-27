@@ -814,6 +814,8 @@ app.post("/api/admin/notices", auth, async (req, res) => {
       title,
       body: req.body.body || "",
       date: req.body.date || "",
+      image: req.body.image || "",
+      link: req.body.link || "",
       createdAt: new Date().toISOString(),
     };
     const updated = [notice, ...notices];
@@ -835,11 +837,13 @@ app.put("/api/admin/notices/:id", auth, async (req, res) => {
     const notices = rows[0]?.value || [];
     const idx = notices.findIndex((n) => n.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: "Notice not found" });
-    const { title, body, date } = req.body;
+    const { title, body, date, image, link } = req.body;
     const next = { ...notices[idx] };
     if (title !== undefined) next.title = String(title).trim();
     if (body !== undefined) next.body = body;
     if (date !== undefined) next.date = date;
+    if (image !== undefined) next.image = image;
+    if (link !== undefined) next.link = link;
     const updated = notices.map((n, i) => (i === idx ? next : n));
     await q(
       `INSERT INTO settings (key, value, updated_at) VALUES ('notices', $1, now())

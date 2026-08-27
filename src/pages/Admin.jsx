@@ -717,21 +717,7 @@ function PageContentEditor() {
         {page === "What's New" && (
           <>
             <PageHeaderFields value={content.pageHeads.whatsNew} onChange={(v) => setPageHead("whatsNew", v)} />
-            <fieldset className="mfieldset">
-              <legend>Notices</legend>
-              <ListEditor
-                items={content.whatsNew}
-                onChange={(v) => set("whatsNew", v)}
-                itemLabel="Notice"
-                addDefault={() => ({ title: "", meta: "", body: [], signoff: "" })}
-                fields={[
-                  { key: "title", label: "Title", type: "text", full: true },
-                  { key: "meta", label: "Meta (venue/subtitle)", type: "text", full: true },
-                  { key: "body", label: "Body", type: "paragraphs", full: true },
-                  { key: "signoff", label: "Sign-off", type: "text", full: true },
-                ]}
-              />
-            </fieldset>
+            <p className="formnote">The notices themselves are managed from the "Notices" tab, not here.</p>
           </>
         )}
 
@@ -795,9 +781,11 @@ function PageContentEditor() {
 }
 
 /* ------------------------------------------------------------------ notices */
+const EMPTY_NOTICE_DRAFT = { title: "", body: "", date: "", image: "", link: "" };
+
 function NoticesEditor() {
   const [notices, setNotices] = useState(null);
-  const [draft, setDraft] = useState({ title: "", body: "", date: "" });
+  const [draft, setDraft] = useState(EMPTY_NOTICE_DRAFT);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
 
@@ -813,7 +801,7 @@ function NoticesEditor() {
     try {
       const created = await api.addNotice(draft);
       setNotices((n) => [created, ...n]);
-      setDraft({ title: "", body: "", date: "" });
+      setDraft(EMPTY_NOTICE_DRAFT);
     } catch (e2) {
       setError(e2.message);
     } finally {
@@ -824,7 +812,7 @@ function NoticesEditor() {
   async function save(n) {
     setError("");
     try {
-      const updated = await api.updateNotice(n.id, { title: n.title, body: n.body, date: n.date });
+      const updated = await api.updateNotice(n.id, { title: n.title, body: n.body, date: n.date, image: n.image, link: n.link });
       setNotices((list) => list.map((x) => (x.id === n.id ? updated : x)));
     } catch (e) {
       setError(e.message);
@@ -853,19 +841,32 @@ function NoticesEditor() {
       <div className="certlayout__fields" style={{ maxWidth: 720 }}>
         <fieldset className="mfieldset">
           <legend>Add a notice</legend>
-          <p className="formnote">Shows in the scrolling notices strip at the top of every page, most recent first.</p>
+          <p className="formnote">
+            Shows in the scrolling notices strip on every page, in the homepage carousel, and in full detail on
+            the Notifications page — most recent first.
+          </p>
           <form onSubmit={add}>
             <div className="field">
               <label>Title *</label>
               <input required value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
             </div>
-            <div className="field">
-              <label>Date (free text, e.g. "5 March 2026")</label>
-              <input value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
+            <div className="row2">
+              <div className="field">
+                <label>Date (free text, e.g. "5 March 2026")</label>
+                <input value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Image URL (shown on the homepage carousel)</label>
+                <input value={draft.image} onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))} placeholder="/carousel/photo.jpg or https://…" />
+              </div>
             </div>
             <div className="field">
-              <label>Body (optional)</label>
-              <textarea rows="2" value={draft.body} onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))} />
+              <label>Description</label>
+              <textarea rows="3" value={draft.body} onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Registration / form link (optional)</label>
+              <input value={draft.link} onChange={(e) => setDraft((d) => ({ ...d, link: e.target.value }))} placeholder="https://…" />
             </div>
             <button className="btn btn--solid" disabled={adding} style={{ marginTop: 10 }}>
               {adding ? "Adding…" : "+ Add notice"}
@@ -882,13 +883,23 @@ function NoticesEditor() {
                 <label>Title</label>
                 <input value={n.title} onChange={(e) => editLocal(n.id, "title", e.target.value)} />
               </div>
-              <div className="field">
-                <label>Date</label>
-                <input value={n.date || ""} onChange={(e) => editLocal(n.id, "date", e.target.value)} />
+              <div className="row2">
+                <div className="field">
+                  <label>Date</label>
+                  <input value={n.date || ""} onChange={(e) => editLocal(n.id, "date", e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Image URL</label>
+                  <input value={n.image || ""} onChange={(e) => editLocal(n.id, "image", e.target.value)} placeholder="/carousel/photo.jpg or https://…" />
+                </div>
               </div>
               <div className="field">
-                <label>Body</label>
-                <textarea rows="2" value={n.body || ""} onChange={(e) => editLocal(n.id, "body", e.target.value)} />
+                <label>Description</label>
+                <textarea rows="3" value={n.body || ""} onChange={(e) => editLocal(n.id, "body", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Registration / form link</label>
+                <input value={n.link || ""} onChange={(e) => editLocal(n.id, "link", e.target.value)} placeholder="https://…" />
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <button type="button" className="btn btn--ghost" onClick={() => save(n)}>Save</button>
