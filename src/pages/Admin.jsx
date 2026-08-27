@@ -24,6 +24,40 @@ const FIELD_LABEL = { x: "X %", y: "Top %", fontSize: "Font size" };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
+// Plain-text dump of every field on a member, for the "Copy" action — same
+// field set/order as the Detail modal below, so what you see is what you get.
+function formatMemberDetails(m) {
+  const lines = [
+    ["Name", m.name],
+    ["Membership type", TYPE_LABEL[m.membership_type]],
+    ["Status", STATUS_LABEL[m.status]],
+    ["Designation", m.designation],
+    ["Mobile", m.mobile],
+    ["E-mail", m.email],
+    ["Date of birth", m.date_of_birth],
+    ["Office", [m.office_address, m.office_pin, m.office_telephone].filter(Boolean).join(" · ")],
+    ["Residence", [m.residence_address, m.residence_pin].filter(Boolean).join(" · ")],
+    ["Academic", m.qual_academic],
+    ["Professional", m.qual_professional],
+    ["Other quals", m.qual_others],
+  ];
+  if (m.membership_type === "institutional") {
+    lines.push(
+      ["Institution", m.inst_address],
+      ["Contact person", m.inst_contact_person],
+      ["Inst. designation", m.inst_designation],
+      ["Inst. telephone", m.inst_telephone]
+    );
+  }
+  lines.push(
+    ["Reference code", m.certificate_ref],
+    ["Membership No.", m.membership_no],
+    ["Verified date", m.verified_date],
+    ["Submitted", m.created_at ? new Date(m.created_at).toLocaleString() : ""]
+  );
+  return lines.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n");
+}
+
 /* ---------------------------------------------------- certificate layout */
 function CertificateLayout() {
   const [layout, setLayout] = useState(null);
@@ -1074,6 +1108,7 @@ function Dashboard({ onOut }) {
   const [certLayout, setCertLayout] = useState(null);
   const [emailingMember, setEmailingMember] = useState(null);
   const [reviewNotice, setReviewNotice] = useState("");
+  const [copiedId, setCopiedId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1164,6 +1199,18 @@ function Dashboard({ onOut }) {
     api.stats().then(setStats).catch(() => {});
   }
 
+  async function copyMember(e, m) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(formatMemberDetails(m));
+      setCopiedId(m.id);
+      setTimeout(() => setCopiedId((id) => (id === m.id ? null : id)), 1500);
+    } catch {
+      // Clipboard access can fail outside a secure context — not worth
+      // surfacing an error for a convenience action like this.
+    }
+  }
+
   return (
     <div className="admin">
       <div className="admin__bar">
@@ -1217,14 +1264,19 @@ function Dashboard({ onOut }) {
 
       <div className="atable">
         <div className="atable__head">
-          <span>Name</span><span>Type</span><span>Contact</span><span>Status</span><span>Submitted</span>
+          <span>Name</span><span>Type</span><span>Contact</span><span>Status</span><span>Submitted</span><span></span>
         </div>
         <AnimatePresence initial={false}>
           {members.map((m) => (
-            <motion.button
+            <motion.div
               key={m.id}
               className="atable__row"
+              role="button"
+              tabIndex={0}
               onClick={() => { setActive(m); setReviewNotice(""); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") { setActive(m); setReviewNotice(""); }
+              }}
               layout
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             >
@@ -1233,7 +1285,10 @@ function Dashboard({ onOut }) {
               <span className="atable__contact">{m.email || m.mobile || "—"}</span>
               <span><i className={`pill pill--${m.status}`}>{STATUS_LABEL[m.status]}</i></span>
               <span className="atable__date">{new Date(m.created_at).toLocaleDateString()}</span>
-            </motion.button>
+              <button type="button" className="btn btn--ghost atable__copy" onClick={(e) => copyMember(e, m)}>
+                {copiedId === m.id ? "Copied ✓" : "Copy"}
+              </button>
+            </motion.div>
           ))}
         </AnimatePresence>
         {!loading && members.length === 0 && <p className="formnote" style={{ padding: "24px 8px" }}>No members in this view yet.</p>}

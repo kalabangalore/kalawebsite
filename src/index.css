@@ -701,10 +701,11 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .admin .dircount { color: var(--muted); }
 
 .atable { border-top: 1px solid var(--line); }
-.atable__head, .atable__row { display: grid; grid-template-columns: 2fr 1fr 1.6fr 1fr 1fr; gap: 16px; align-items: center; }
+.atable__head, .atable__row { display: grid; grid-template-columns: 2fr 1fr 1.6fr 1fr 1fr auto; gap: 16px; align-items: center; }
 .atable__head { font-family: var(--secondary); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 14px 10px; }
-.atable__row { width: 100%; text-align: left; padding: 16px 10px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 14.5px; transition: background 0.2s, padding-left 0.3s var(--ease); }
+.atable__row { width: 100%; text-align: left; padding: 16px 10px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 14.5px; transition: background 0.2s, padding-left 0.3s var(--ease); cursor: pointer; }
 .atable__row:hover { background: rgba(194,135,63,0.07); padding-left: 16px; }
+.atable__copy { padding: 7px 12px; font-size: 10.5px; justify-self: end; white-space: nowrap; }
 .atable__name { font-family: var(--primary); font-size: 17px; }
 .atable__name em { font-family: var(--secondary); font-size: 11px; color: var(--brass); font-style: normal; }
 .atable__contact, .atable__date { color: var(--muted); }
