@@ -5,6 +5,7 @@
 
 :root {
   --ink: #0f1f1b;        /* deep bottle-green near-black */
+  --ink-deep: #0a1512;   /* Home's hero + top nav — a touch darker than --ink */
   --ink-2: #16302a;      /* raised green surface */
   --ink-3: #1d3c34;      /* hover / border green */
   --paper: #f4f0e6;      /* warm archival paper */
@@ -144,10 +145,17 @@ h3 { font-family: var(--primary); font-weight: 600; }
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(6px);
+  /* Flat, matching the page's --ink background (used on every non-hero
+     page's pagehead) — no alpha/blur, so no seam against the page below. */
+  background: var(--ink);
+  backdrop-filter: none;
   transition: background 0.4s var(--ease), border-color 0.4s, backdrop-filter 0.4s;
   border-bottom: 1px solid transparent;
+}
+.nav--hero {
+  /* Home's hero sits directly under the nav at scroll position 0 — both use
+     this slightly deeper shade so there's no seam between them either. */
+  background: var(--ink-deep);
 }
 .nav--scrolled {
   /* Solid, exact match to the page background behind it (var(--ink)) — no
@@ -259,7 +267,7 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .hero {
   position: relative;
   overflow: hidden;
-  background: var(--ink);
+  background: var(--ink-deep);
   padding-bottom: clamp(28px, 4vw, 44px);
 }
 
