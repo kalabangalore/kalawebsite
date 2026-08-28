@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
 import { Reveal, Stagger, stagItem, Counter } from "../components/primitives";
 import Lightbox from "../components/Lightbox";
-import NotificationsCarousel from "../components/NotificationsCarousel";
 import Marquee from "../components/Marquee";
 import { useSiteContent } from "../lib/useSiteContent";
 
@@ -117,8 +116,6 @@ export default function Home() {
   return (
     <>
       <Hero heroSlides={heroSlides} />
-
-      <NotificationsCarousel />
 
       {/* Stats */}
       <section style={{ background: "var(--ink)" }}>
