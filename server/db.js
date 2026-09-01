@@ -119,6 +119,10 @@ export async function initSchema() {
   // actually completed the self-service PIN + details flow, decoupled from
   // claimed_member_id simply existing.
   await q(`ALTER TABLE legacy_members ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN NOT NULL DEFAULT false;`);
+  // The club's own historical Member Id (e.g. "KALA1002") from their official
+  // membership report — kept purely for cross-referencing against that
+  // report, not used anywhere in the app's own logic.
+  await q(`ALTER TABLE legacy_members ADD COLUMN IF NOT EXISTS external_member_id TEXT;`);
 
   // Older deployments may have created the FK without ON DELETE SET NULL —
   // fix it in place so deleting a claimed member frees up their roster entry
