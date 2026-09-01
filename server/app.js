@@ -12,6 +12,23 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 // Fields a self-claiming legacy member may fill in themselves.
 const CLAIM_FIELDS = ["email", "mobile", "date_of_birth", "designation", "membership_type"];
 
+// A claimed legacy member editing their own details later (address changed,
+// name prefix corrected, etc.) — broader than CLAIM_FIELDS since this covers
+// ongoing corrections, not just the one-time initial claim.
+const SELF_EDIT_FIELDS = [
+  "name",
+  "email",
+  "mobile",
+  "date_of_birth",
+  "designation",
+  "membership_type",
+  "office_address",
+  "office_pin",
+  "office_telephone",
+  "residence_address",
+  "residence_pin",
+];
+
 // Certificate images arrive from the browser as JPEG (see canvasToAttachment
 // in CertificateCanvas.jsx) — this keeps the attached filename's extension
 // honest instead of always saying .png.
@@ -496,6 +513,35 @@ app.post("/api/legacy-members/:id/login", async (req, res) => {
   }
   const { rows: memberRows } = await q("SELECT * FROM members WHERE id = $1", [legacy.claimed_member_id]);
   res.json({ ok: true, claimed: true, member: memberRows[0] || null });
+});
+
+// Public: an already-claimed legacy member updates their own details later
+// — address changed, name prefix corrected (Mr. -> Dr.), etc. Requires the
+// same PIN as login, re-verified here rather than trusting a prior session.
+app.post("/api/legacy-members/:id/update", async (req, res) => {
+  try {
+    const { rows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
+    const legacy = rows[0];
+    if (!legacy.pin_hash || !verifyPin(String(req.body.pin || ""), legacy.pin_hash)) {
+      return res.status(401).json({ error: "Incorrect PIN" });
+    }
+    if (!legacy.profile_completed || !legacy.claimed_member_id) {
+      return res.status(400).json({ error: "Complete your details first." });
+    }
+    const { cols, vals } = pick(req.body, SELF_EDIT_FIELDS);
+    if (!cols.length) return res.status(400).json({ error: "Nothing to update" });
+    const set = cols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+    vals.push(legacy.claimed_member_id);
+    const { rows: updated } = await q(
+      `UPDATE members SET ${set}, updated_at = now() WHERE id = $${vals.length} RETURNING *`,
+      vals
+    );
+    res.json({ ok: true, member: updated[0] });
+  } catch (err) {
+    console.error("legacy self-edit error:", err.message);
+    res.status(500).json({ error: "Could not update your details" });
+  }
 });
 
 // Public: a legacy roster entry is claimed by the person it belongs to. No

@@ -101,6 +101,10 @@ export default function LegacyMemberAccess() {
   const [emailStatus, setEmailStatus] = useState(""); // "", "sending", "sent", "failed"
   const emailedRef = useRef(false);
   const canvasWrapRef = useRef(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editErr, setEditErr] = useState("");
 
   useEffect(() => {
     api.getCertificateLayout().then(setLayout).catch(() => {});
@@ -191,6 +195,41 @@ export default function LegacyMemberAccess() {
 
   const d = (k) => (e) => setDetails((p) => ({ ...p, [k]: e.target.value }));
 
+  function startEdit() {
+    setEditErr("");
+    setEditForm({
+      name: member.name || "",
+      designation: member.designation || "",
+      mobile: member.mobile || "",
+      email: member.email || "",
+      date_of_birth: member.date_of_birth || "",
+      membership_type: member.membership_type || "life",
+      office_address: member.office_address || "",
+      office_pin: member.office_pin || "",
+      office_telephone: member.office_telephone || "",
+      residence_address: member.residence_address || "",
+      residence_pin: member.residence_pin || "",
+    });
+    setEditing(true);
+  }
+
+  const ed = (k) => (e) => setEditForm((p) => ({ ...p, [k]: e.target.value }));
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    setEditBusy(true);
+    setEditErr("");
+    try {
+      const res = await api.updateLegacyMember(entry.id, { pin, ...editForm });
+      setMember(res.member);
+      setEditing(false);
+    } catch (e2) {
+      setEditErr(e2.message);
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
   const previewData = entry && {
     name: entry.name,
     membership_type: details.membership_type,
@@ -210,6 +249,82 @@ export default function LegacyMemberAccess() {
     );
   }
 
+  if (step === "result" && member && editing && editForm) {
+    return (
+      <form className="cform" onSubmit={saveEdit} style={{ maxWidth: 640 }}>
+        <p className="formnote">
+          Update your details below — change your address, correct a title (Mr. / Dr. / Mrs. etc.) as
+          part of your name, or fix anything else that's out of date.
+        </p>
+        <div className="row2">
+          <div className="field">
+            <label>Name (include title, e.g. "Dr. Ramesh Kumar")</label>
+            <input value={editForm.name} onChange={ed("name")} />
+          </div>
+          <div className="field">
+            <label>Designation</label>
+            <input value={editForm.designation} onChange={ed("designation")} />
+          </div>
+        </div>
+        <div className="row2">
+          <div className="field">
+            <label>E-mail</label>
+            <input type="email" value={editForm.email} onChange={ed("email")} />
+          </div>
+          <div className="field">
+            <label>Mobile</label>
+            <input value={editForm.mobile} onChange={ed("mobile")} />
+          </div>
+        </div>
+        <div className="row2">
+          <div className="field">
+            <label>Date of birth</label>
+            <input type="date" value={editForm.date_of_birth} onChange={ed("date_of_birth")} />
+          </div>
+          <div className="field">
+            <label>Membership type</label>
+            <select value={editForm.membership_type} onChange={ed("membership_type")}>
+              {TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="field">
+          <label>Office address</label>
+          <textarea rows="2" value={editForm.office_address} onChange={ed("office_address")} />
+        </div>
+        <div className="row2">
+          <div className="field">
+            <label>Office PIN code</label>
+            <input value={editForm.office_pin} onChange={ed("office_pin")} />
+          </div>
+          <div className="field">
+            <label>Office telephone</label>
+            <input value={editForm.office_telephone} onChange={ed("office_telephone")} />
+          </div>
+        </div>
+        <div className="field">
+          <label>Residence address</label>
+          <textarea rows="2" value={editForm.residence_address} onChange={ed("residence_address")} />
+        </div>
+        <div className="field">
+          <label>Residence PIN code</label>
+          <input value={editForm.residence_pin} onChange={ed("residence_pin")} />
+        </div>
+        {editErr && <p className="formnote" style={{ color: "#b3402f" }}>{editErr}</p>}
+        <div className="sign" style={{ display: "flex", gap: 12 }}>
+          <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)} disabled={editBusy}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn--solid" disabled={editBusy}>
+            {editBusy ? "Saving…" : "Save changes"}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   if (step === "result" && member) {
     return (
       <div className="notice" style={{ textAlign: "left" }}>
@@ -225,7 +340,7 @@ export default function LegacyMemberAccess() {
           {emailStatus === "sent" && `Certificate emailed to ${member.email}.`}
           {emailStatus === "failed" && "Couldn't email the certificate — you can still download it below, or try resending."}
         </p>
-        <div className="sign" style={{ marginTop: 12, display: "flex", gap: 12 }}>
+        <div className="sign" style={{ marginTop: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
             type="button"
             className="btn btn--solid"
@@ -235,6 +350,9 @@ export default function LegacyMemberAccess() {
           </button>
           <button type="button" className="btn btn--ghost" onClick={resend} disabled={emailStatus === "sending"}>
             Resend by email
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={startEdit}>
+            Edit my details
           </button>
         </div>
       </div>
