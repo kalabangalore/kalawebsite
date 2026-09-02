@@ -30,7 +30,7 @@ export default function Marquee() {
             key={`${n.id}-${i}`}
             onClick={() => navigate(`/whats-new#notice-${n.id}`)}
           >
-            <b>Notice:</b> {n.title}
+            <b>Notice:</b> {n.marqueeText || n.title}
             {n.date ? ` — ${n.date}` : ""}
           </button>
         ))}

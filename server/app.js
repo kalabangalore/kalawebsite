@@ -923,6 +923,7 @@ app.post("/api/admin/notices", auth, async (req, res) => {
     const notice = {
       id: genNoticeId(),
       title,
+      marqueeText: req.body.marqueeText || "",
       body: req.body.body || "",
       date: req.body.date || "",
       image: req.body.image || "",
@@ -948,9 +949,10 @@ app.put("/api/admin/notices/:id", auth, async (req, res) => {
     const notices = rows[0]?.value || [];
     const idx = notices.findIndex((n) => n.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: "Notice not found" });
-    const { title, body, date, image, link } = req.body;
+    const { title, marqueeText, body, date, image, link } = req.body;
     const next = { ...notices[idx] };
     if (title !== undefined) next.title = String(title).trim();
+    if (marqueeText !== undefined) next.marqueeText = marqueeText;
     if (body !== undefined) next.body = body;
     if (date !== undefined) next.date = date;
     if (image !== undefined) next.image = image;

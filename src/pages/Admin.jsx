@@ -781,7 +781,7 @@ function PageContentEditor() {
 }
 
 /* ------------------------------------------------------------------ notices */
-const EMPTY_NOTICE_DRAFT = { title: "", body: "", date: "", image: "", link: "" };
+const EMPTY_NOTICE_DRAFT = { title: "", marqueeText: "", body: "", date: "", image: "", link: "" };
 
 function NoticesEditor() {
   const [notices, setNotices] = useState(null);
@@ -812,7 +812,14 @@ function NoticesEditor() {
   async function save(n) {
     setError("");
     try {
-      const updated = await api.updateNotice(n.id, { title: n.title, body: n.body, date: n.date, image: n.image, link: n.link });
+      const updated = await api.updateNotice(n.id, {
+        title: n.title,
+        marqueeText: n.marqueeText,
+        body: n.body,
+        date: n.date,
+        image: n.image,
+        link: n.link,
+      });
       setNotices((list) => list.map((x) => (x.id === n.id ? updated : x)));
     } catch (e) {
       setError(e.message);
@@ -842,13 +849,27 @@ function NoticesEditor() {
         <fieldset className="mfieldset">
           <legend>Add a notice</legend>
           <p className="formnote">
-            Shows in the scrolling notices strip on every page, in the homepage carousel, and in full detail on
-            the Notifications page — most recent first.
+            Shows in full detail on the Notifications page — most recent first — and, as a short scrolling
+            teaser, in the notices strip on every page.
           </p>
           <form onSubmit={add}>
             <div className="field">
               <label>Title *</label>
+              <p className="formnote" style={{ marginTop: -4, marginBottom: 6 }}>
+                The heading shown on the Notifications page.
+              </p>
               <input required value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Marquee text (optional)</label>
+              <p className="formnote" style={{ marginTop: -4, marginBottom: 6 }}>
+                Short teaser for the scrolling notices strip — falls back to the title above if left blank.
+              </p>
+              <input
+                value={draft.marqueeText}
+                onChange={(e) => setDraft((d) => ({ ...d, marqueeText: e.target.value }))}
+                placeholder="e.g. Click here for KALA KNOWCON-2027"
+              />
             </div>
             <div className="row2">
               <div className="field">
@@ -883,6 +904,14 @@ function NoticesEditor() {
               <div className="field">
                 <label>Title</label>
                 <input value={n.title} onChange={(e) => editLocal(n.id, "title", e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Marquee text</label>
+                <input
+                  value={n.marqueeText || ""}
+                  onChange={(e) => editLocal(n.id, "marqueeText", e.target.value)}
+                  placeholder="Falls back to the title above if left blank"
+                />
               </div>
               <div className="row2">
                 <div className="field">
