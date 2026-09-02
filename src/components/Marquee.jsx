@@ -12,11 +12,18 @@ export default function Marquee() {
   if (!notices.length) return null;
 
   const items = notices.slice(0, 10);
+  // The track scrolls by translating exactly -50%, so the two halves must be
+  // identical and, together, wider than any real viewport — otherwise (e.g.
+  // just one short notice) the track is narrower than the bar and most of
+  // it sits empty until the loop restarts. Repeat the item list enough
+  // times per half to guarantee that regardless of how few notices exist.
+  const repeat = Math.max(4, Math.ceil(16 / items.length));
+  const half = Array(repeat).fill(items).flat();
 
   return (
     <div className="marquee" role="region" aria-label="Latest notices">
       <div className="marquee__track">
-        {[...items, ...items].map((n, i) => (
+        {[...half, ...half].map((n, i) => (
           <button
             type="button"
             className="marquee__item"
