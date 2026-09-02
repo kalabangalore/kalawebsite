@@ -145,25 +145,16 @@ h3 { font-family: var(--primary); font-weight: 600; }
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  /* Flat, matching the page's --ink background (used on every non-hero
-     page's pagehead) — no alpha/blur, so no seam against the page below. */
-  background: var(--ink);
+  /* Deliberately a bold, distinct band (brand brass) rather than blending
+     into the page — same color at every scroll position, so no seam logic
+     is needed here the way the old ink-matched version required. */
+  background: var(--brass);
   backdrop-filter: none;
-  transition: background 0.4s var(--ease), border-color 0.4s, backdrop-filter 0.4s;
+  transition: border-color 0.4s;
   border-bottom: 1px solid transparent;
 }
-.nav--hero {
-  /* Home's hero sits directly under the nav at scroll position 0 — both use
-     this slightly deeper shade so there's no seam between them either. */
-  background: var(--ink-deep);
-}
 .nav--scrolled {
-  /* Solid, exact match to the page background behind it (var(--ink)) — no
-     alpha/blur so there's no visible color seam between the nav and the
-     rest of the page once scrolled. */
-  background: var(--ink);
-  backdrop-filter: none;
-  border-bottom-color: var(--line);
+  border-bottom-color: rgba(15, 31, 27, 0.18);
 }
 .nav__inner {
   width: 100%;
@@ -179,36 +170,36 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .nav__brand img { height: 52px; width: auto; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); transition: height 0.4s var(--ease); }
 .nav--hero .nav__brand img { height: 76px; }
 .nav__brand-text { display: flex; flex-direction: column; gap: 2px; }
-.nav__brand-name { font-family: var(--primary); font-weight: 700; font-size: clamp(13px, 1.3vw, 16px); line-height: 1.15; color: var(--text); max-width: 22ch; }
-.nav__brand-reg { font-family: var(--secondary); font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; color: var(--brass-soft); text-transform: uppercase; white-space: nowrap; }
+.nav__brand-name { font-family: var(--primary); font-weight: 700; font-size: clamp(13px, 1.3vw, 16px); line-height: 1.15; color: var(--ink); max-width: 22ch; }
+.nav__brand-reg { font-family: var(--secondary); font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; color: rgba(15,31,27,0.65); text-transform: uppercase; white-space: nowrap; }
 
 .nav__links { display: flex; align-items: center; gap: 4px; }
 
-.nav__founder { flex: none; width: 42px; height: 52px; border-radius: 4px; overflow: hidden; border: 1px solid var(--brass); margin-left: 22px; transition: width 0.4s var(--ease), height 0.4s var(--ease); }
+.nav__founder { flex: none; width: 42px; height: 52px; border-radius: 4px; overflow: hidden; border: 1px solid var(--ink); margin-left: 22px; transition: width 0.4s var(--ease), height 0.4s var(--ease); }
 .nav__founder img { display: block; width: 100%; height: 100%; object-fit: cover; filter: brightness(1.3) contrast(1.05); }
 .nav--hero .nav__founder { width: 62px; height: 76px; }
 .nav__link {
   position: relative;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 8px 11px;
   white-space: nowrap;
-  color: var(--muted);
+  color: rgba(15,31,27,0.72);
   border-radius: var(--radius);
   transition: color 0.25s, font-weight 0.25s;
 }
-.nav__link:hover { color: var(--text); }
-.nav__link.active { color: var(--brass-soft); }
+.nav__link:hover { color: var(--ink); }
+.nav__link.active { color: var(--ink); font-weight: 700; }
 .nav__link.active::after {
   content: ""; position: absolute; left: 14px; right: 14px; bottom: 2px;
-  height: 1.5px; background: var(--brass);
+  height: 1.5px; background: var(--ink);
 }
-.nav--hero .nav__link { font-weight: 700; color: var(--text); }
-.nav--hero .nav__link.active { color: var(--brass); }
 .nav__cta { margin-left: 10px; }
+.nav__cta.btn--solid { background: var(--ink); color: var(--brass-soft); }
+.nav__cta.btn--solid:hover { background: var(--ink-2); color: var(--brass-soft); transform: translateY(-2px); }
 
 .nav__burger { display: none; flex-direction: column; gap: 5px; padding: 8px; }
-.nav__burger span { width: 22px; height: 2px; background: var(--text); transition: 0.3s; }
+.nav__burger span { width: 22px; height: 2px; background: var(--ink); transition: 0.3s; }
 
 /* mobile drawer */
 .drawer {
