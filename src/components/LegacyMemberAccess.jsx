@@ -8,6 +8,14 @@ const TYPES = [
   { value: "student", label: "Student" },
 ];
 
+// For greetings — "Dr. Pandurang Venkappa Konnur".split(" ")[0] is just
+// "Dr.", so strip a leading title first to get an actual first name.
+const TITLE_RE = /^(dr|mr|mrs|ms|prof|smt|shri|sri)\.?\s+/i;
+function firstName(fullName) {
+  const stripped = (fullName || "").replace(TITLE_RE, "").trim();
+  return (stripped || fullName || "").split(" ")[0];
+}
+
 // Searchable name picker — a plain <select> would be unwieldy for 1,500+
 // names, so this is a small custom combobox: type to filter, click to pick.
 function NamePicker({ onPick }) {
@@ -105,6 +113,11 @@ export default function LegacyMemberAccess() {
   const [editForm, setEditForm] = useState(null);
   const [editBusy, setEditBusy] = useState(false);
   const [editErr, setEditErr] = useState("");
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [correctionMsg, setCorrectionMsg] = useState("");
+  const [correctionBusy, setCorrectionBusy] = useState(false);
+  const [correctionSent, setCorrectionSent] = useState(false);
+  const [correctionErr, setCorrectionErr] = useState("");
 
   useEffect(() => {
     api.getCertificateLayout().then(setLayout).catch(() => {});
@@ -171,6 +184,10 @@ export default function LegacyMemberAccess() {
   async function handleCanvasReady(canvas) {
     if (emailedRef.current) return;
     emailedRef.current = true;
+    // No email on file means they never asked to be mailed a copy — the
+    // download button already gives them the real certificate, so there's
+    // nothing to report here (not a "failed" state).
+    if (!member?.email) return;
     setEmailStatus("sending");
     try {
       const res = await api.emailLegacyCertificate(entry.id, canvasToAttachment(canvas));
@@ -227,6 +244,19 @@ export default function LegacyMemberAccess() {
       setEditErr(e2.message);
     } finally {
       setEditBusy(false);
+    }
+  }
+
+  async function sendCorrection() {
+    setCorrectionBusy(true);
+    setCorrectionErr("");
+    try {
+      await api.requestLegacyCorrection(entry.id, correctionMsg);
+      setCorrectionSent(true);
+    } catch (e) {
+      setCorrectionErr(e.message);
+    } finally {
+      setCorrectionBusy(false);
     }
   }
 
@@ -329,16 +359,20 @@ export default function LegacyMemberAccess() {
     return (
       <div className="notice" style={{ textAlign: "left" }}>
         <span className="tag">Certificate ready</span>
-        <h3 style={{ marginTop: 8 }}>Welcome back, {member.name.split(" ")[0]}.</h3>
+        <h3 style={{ marginTop: 8 }}>Welcome back, {firstName(member.name)}.</h3>
         <div style={{ marginTop: 16, maxWidth: 640 }} ref={canvasWrapRef}>
           <CertificateCanvas variant="signed" layout={layout} data={member} onReady={handleCanvasReady} />
         </div>
         <p className="certref" style={{ marginTop: 16 }}>
           Your reference code: <b>{member.certificate_ref}</b>
-          <br />
-          {emailStatus === "sending" && "Emailing your certificate…"}
-          {emailStatus === "sent" && `Certificate emailed to ${member.email}.`}
-          {emailStatus === "failed" && "Couldn't email the certificate — you can still download it below, or try resending."}
+          {member.email && (
+            <>
+              <br />
+              {emailStatus === "sending" && "Emailing your certificate…"}
+              {emailStatus === "sent" && `Certificate emailed to ${member.email}.`}
+              {emailStatus === "failed" && "Couldn't email the certificate — you can still download it below, or try resending."}
+            </>
+          )}
         </p>
         <div className="sign" style={{ marginTop: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
@@ -348,13 +382,51 @@ export default function LegacyMemberAccess() {
           >
             Download certificate
           </button>
-          <button type="button" className="btn btn--ghost" onClick={resend} disabled={emailStatus === "sending"}>
-            Resend by email
-          </button>
+          {member.email && (
+            <button type="button" className="btn btn--ghost" onClick={resend} disabled={emailStatus === "sending"}>
+              Resend by email
+            </button>
+          )}
           <button type="button" className="btn btn--ghost" onClick={startEdit}>
             Edit my details
           </button>
         </div>
+
+        {!showCorrection && !correctionSent && (
+          <button
+            type="button"
+            className="btn btn--ghost"
+            style={{ marginTop: 16, fontSize: 13 }}
+            onClick={() => setShowCorrection(true)}
+          >
+            Something wrong or missing? Notify the office →
+          </button>
+        )}
+        {showCorrection && !correctionSent && (
+          <div className="field" style={{ marginTop: 16, maxWidth: 480 }}>
+            <label>Tell the office what's wrong or missing</label>
+            <textarea
+              rows="3"
+              value={correctionMsg}
+              onChange={(e) => setCorrectionMsg(e.target.value)}
+              placeholder="e.g. my membership number looks wrong, or my name has a typo the edit form doesn't cover…"
+            />
+            {correctionErr && <p className="formnote" style={{ color: "#b3402f" }}>{correctionErr}</p>}
+            <div className="sign" style={{ display: "flex", gap: 12, marginTop: 10 }}>
+              <button type="button" className="btn btn--ghost" onClick={() => setShowCorrection(false)} disabled={correctionBusy}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn--solid" onClick={sendCorrection} disabled={correctionBusy}>
+                {correctionBusy ? "Sending…" : "Send to office"}
+              </button>
+            </div>
+          </div>
+        )}
+        {correctionSent && (
+          <p className="formnote" style={{ marginTop: 16, color: "var(--sage)" }}>
+            Sent — the office will follow up with you.
+          </p>
+        )}
       </div>
     );
   }
@@ -373,9 +445,10 @@ export default function LegacyMemberAccess() {
       {step === "setup" && entry && (
         <form className="cform" onSubmit={submitSetup}>
           <p className="formnote">
-            Hi {entry.name.split(" ")[0]} — we don't have your contact details yet. Set a PIN
-            (to log back in later) and fill these in; your certificate is issued and emailed to
-            you as soon as you submit.
+            Hi {firstName(entry.name)} — we already have enough on file to issue your certificate.
+            Just set a PIN (so you can come back later) and it's ready to view and download.
+            Everything below is optional — fill in anything you'd like us to have on record, or skip
+            straight to your certificate.
           </p>
           <div className="row2">
             <div className="field">
@@ -399,10 +472,11 @@ export default function LegacyMemberAccess() {
               />
             </div>
           </div>
+          <p className="formnote" style={{ marginTop: 4 }}>Optional — only if you'd like us to have these on file:</p>
           <div className="row2">
             <div className="field">
-              <label>E-mail *</label>
-              <input type="email" required value={details.email} onChange={d("email")} placeholder="you@email.com" />
+              <label>E-mail</label>
+              <input type="email" value={details.email} onChange={d("email")} placeholder="you@email.com" />
             </div>
             <div className="field">
               <label>Mobile</label>
@@ -441,7 +515,7 @@ export default function LegacyMemberAccess() {
 
       {step === "pin-login" && entry && (
         <form className="cform" onSubmit={submitLogin}>
-          <p className="formnote">Welcome back, {entry.name.split(" ")[0]}. Enter your PIN.</p>
+          <p className="formnote">Welcome back, {firstName(entry.name)}. Enter your PIN.</p>
           <div className="field">
             <label>PIN</label>
             <input

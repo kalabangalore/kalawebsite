@@ -77,6 +77,7 @@ export const api = {
   setLegacyPin: (id, pin) => request(`/legacy-members/${id}/set-pin`, { method: "POST", body: { pin } }),
   loginLegacyMember: (id, pin) => request(`/legacy-members/${id}/login`, { method: "POST", body: { pin } }),
   updateLegacyMember: (id, body) => request(`/legacy-members/${id}/update`, { method: "POST", body }),
+  requestLegacyCorrection: (id, message) => request(`/legacy-members/${id}/request-correction`, { method: "POST", body: { message } }),
   emailLegacyCertificate: (id, certificatePreview) =>
     request(`/legacy-members/${id}/email-certificate`, { method: "POST", body: { certificatePreview } }),
 

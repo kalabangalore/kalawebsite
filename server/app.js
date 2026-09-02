@@ -330,6 +330,48 @@ async function emailRejection(member, reason) {
   return true;
 }
 
+// Internal notification to the office — a legacy member flagging that their
+// certificate/record is missing or wrong in some way the self-service edit
+// form doesn't cover. Simple/functional since this is staff-facing, not the
+// branded member-facing templates above.
+async function emailCorrectionRequest(legacy, member, message) {
+  const transport = getMailer();
+  if (!transport) return false;
+
+  const officeAddr = process.env.GMAIL_USER;
+  const safeMessage = escHtml(message || "(no message provided)");
+  const html = `
+    <p>A member has requested a correction to their KALA record.</p>
+    <ul>
+      <li><b>Name on roster:</b> ${escHtml(legacy.name)}</li>
+      <li><b>Membership No.:</b> ${escHtml(member?.membership_no || "—")}</li>
+      <li><b>Reference code:</b> ${escHtml(member?.certificate_ref || "—")}</li>
+      <li><b>Roster entry ID:</b> ${legacy.id}</li>
+    </ul>
+    <p><b>Their message:</b></p>
+    <p style="white-space:pre-wrap;">${safeMessage}</p>
+  `;
+  const text = [
+    "A member has requested a correction to their KALA record.",
+    `Name on roster: ${legacy.name}`,
+    `Membership No.: ${member?.membership_no || "-"}`,
+    `Reference code: ${member?.certificate_ref || "-"}`,
+    `Roster entry ID: ${legacy.id}`,
+    "",
+    "Their message:",
+    message || "(no message provided)",
+  ].join("\n");
+
+  await transport.sendMail({
+    from: `"Karnataka State Library Association" <${process.env.GMAIL_USER}>`,
+    to: officeAddr,
+    subject: `Correction requested — ${legacy.name}`,
+    text,
+    html,
+  });
+  return true;
+}
+
 function auth(req, res, next) {
   const h = req.headers.authorization || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : null;
@@ -546,10 +588,10 @@ app.post("/api/legacy-members/:id/update", async (req, res) => {
 
 // Public: a legacy roster entry is claimed by the person it belongs to. No
 // admin approval — every roster entry already has a member record and ID
-// (bulk-assigned, see server/promote-legacy-members.js); this just fills in
-// the personal details on that existing record. Requires a PIN to already
-// be set (i.e. this follows /set-pin) and an email address, since the
-// certificate is delivered by email.
+// (bulk-assigned, see server/promote-legacy-members.js) with the name and
+// membership number the certificate needs, so this doesn't require any
+// personal details beyond a PIN (already set via /set-pin) — everything
+// else in the request body is an optional update to the existing record.
 app.post("/api/legacy-members/:id/claim", async (req, res) => {
   try {
     const { rows: legacyRows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
@@ -561,9 +603,10 @@ app.post("/api/legacy-members/:id/claim", async (req, res) => {
     if (!legacy.pin_hash) {
       return res.status(400).json({ error: "Set a PIN before completing your details." });
     }
-    if (!req.body.email?.trim()) {
-      return res.status(400).json({ error: "An email address is required so we can send your certificate." });
-    }
+    // Email is optional: every roster entry already carries the name and
+    // membership number the certificate needs (from the bulk import), so
+    // the browser can render and download it immediately. Providing an
+    // email is only needed if they also want it mailed to them.
 
     const membershipType = ["life", "institutional", "student"].includes(req.body.membership_type)
       ? req.body.membership_type
@@ -614,6 +657,28 @@ app.post("/api/legacy-members/:id/claim", async (req, res) => {
   } catch (err) {
     console.error("legacy claim error:", err.message);
     res.status(500).json({ error: "Could not complete your claim. Please try again." });
+  }
+});
+
+// Public: a member flags that their record/certificate is missing or wrong
+// in a way they can't fix themselves via the edit form — emails the office
+// rather than trying to auto-detect "incomplete" data, since the member is
+// in the best position to judge that, not a heuristic.
+app.post("/api/legacy-members/:id/request-correction", async (req, res) => {
+  try {
+    const { rows } = await q("SELECT * FROM legacy_members WHERE id = $1", [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: "Roster entry not found" });
+    const legacy = rows[0];
+    let member = null;
+    if (legacy.claimed_member_id) {
+      const { rows: memberRows } = await q("SELECT membership_no, certificate_ref FROM members WHERE id = $1", [legacy.claimed_member_id]);
+      member = memberRows[0] || null;
+    }
+    const sent = await emailCorrectionRequest(legacy, member, req.body.message);
+    res.json({ ok: true, emailed: sent });
+  } catch (err) {
+    console.error("correction request error:", err.message);
+    res.status(500).json({ error: "Could not send your request" });
   }
 });
 
