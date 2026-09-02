@@ -107,6 +107,7 @@ export default function LegacyMemberAccess() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [emailStatus, setEmailStatus] = useState(""); // "", "sending", "sent", "failed"
+  const justClaimedRef = useRef(false); // only auto-email right after a fresh claim, not on every later PIN login
   const emailedRef = useRef(false);
   const canvasWrapRef = useRef(null);
   const [editing, setEditing] = useState(false);
@@ -153,6 +154,7 @@ export default function LegacyMemberAccess() {
       }
       const res = await api.claimLegacyMember(entry.id, details);
       setMember(res.member);
+      justClaimedRef.current = true;
       setStep("result");
     } catch (e2) {
       setErr(e2.message);
@@ -169,6 +171,7 @@ export default function LegacyMemberAccess() {
       const res = await api.loginLegacyMember(entry.id, pin);
       if (res.claimed) {
         setMember(res.member);
+        justClaimedRef.current = false;
         setStep("result");
       } else {
         // PIN was set previously but the details step never completed.
@@ -184,6 +187,10 @@ export default function LegacyMemberAccess() {
   async function handleCanvasReady(canvas) {
     if (emailedRef.current) return;
     emailedRef.current = true;
+    // Auto-email only right after a fresh claim — a plain PIN login to view
+    // or re-download the certificate shouldn't re-send it every time. Later
+    // copies go out only via the explicit "Resend by email" button.
+    if (!justClaimedRef.current) return;
     // No email on file means they never asked to be mailed a copy — the
     // download button already gives them the real certificate, so there's
     // nothing to report here (not a "failed" state).
