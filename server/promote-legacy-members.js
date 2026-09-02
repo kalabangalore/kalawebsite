@@ -10,10 +10,21 @@ try {
   await initSchema();
 
   // Anyone who already went through the old claim flow (before this
-  // migration existed) has genuinely completed their profile.
+  // migration existed) has genuinely completed their profile. Bulk-assigning
+  // claimed_member_id below (for rows that had none yet) is NOT the same as
+  // a real claim — a pin_hash alone isn't enough evidence either, since
+  // someone can set a pin and then never finish (the /claim endpoint always
+  // requires and stores a real email, so that's the actual completion
+  // signal). Getting this wrong makes every future re-run of this idempotent
+  // script mark rows "already claimed" that never really were, which then
+  // makes /claim reject the person's genuine first attempt.
   await q(
-    `UPDATE legacy_members SET profile_completed = true
-     WHERE claimed_member_id IS NOT NULL AND profile_completed = false`
+    `UPDATE legacy_members lm SET profile_completed = true
+     FROM members m
+     WHERE lm.claimed_member_id = m.id
+       AND lm.profile_completed = false
+       AND lm.pin_hash IS NOT NULL
+       AND m.email IS NOT NULL`
   );
 
   const { rows: pending } = await q(
