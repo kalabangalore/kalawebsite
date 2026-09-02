@@ -137,6 +137,11 @@ h3 { font-family: var(--primary); font-weight: 600; }
 .btn--ghost:hover { border-color: var(--brass); color: var(--brass-soft); transform: translateY(-2px); }
 .paper-bg .btn--ghost { border-color: var(--line-dark); color: var(--text-dark); }
 .paper-bg .btn--ghost:hover { border-color: var(--brass); color: #9a6a28; }
+/* .notice cards are always on the light paper-2 background regardless of
+   the section they sit in (e.g. inside the dark membership-form section),
+   so ghost buttons inside them need the dark variant too. */
+.notice .btn--ghost { border-color: var(--line-dark); color: var(--text-dark); }
+.notice .btn--ghost:hover { border-color: var(--brass); color: #9a6a28; }
 
 /* ============================================================
    Navbar
