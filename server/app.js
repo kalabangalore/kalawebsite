@@ -509,7 +509,15 @@ const DIRECTORY_CTE = `
     FROM legacy_members lm
     LEFT JOIN members m ON m.id = lm.claimed_member_id
     UNION ALL
-    SELECT m.id AS row_id, 'member' AS kind, m.name, NULL::text AS detail,
+    SELECT m.id AS row_id, 'member' AS kind, m.name,
+           -- Mirrors the legacy roster's free-text "<designation>,
+           -- <office address>" detail line, built from the member's own
+           -- structured fields (falling back to the institutional pair
+           -- when the individual one is blank, for institutional members).
+           NULLIF(concat_ws(', ',
+             NULLIF(trim(coalesce(NULLIF(trim(m.designation), ''), NULLIF(trim(m.inst_designation), ''))), ''),
+             NULLIF(trim(coalesce(NULLIF(trim(m.office_address), ''), NULLIF(trim(m.inst_address), ''))), '')
+           ), '') AS detail,
            false AS claimed, m.membership_no, m.id AS member_id
     FROM members m
     WHERE m.status = 'active'
