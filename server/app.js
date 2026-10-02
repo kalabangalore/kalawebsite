@@ -477,29 +477,69 @@ app.post("/api/certificate/layout/propose", async (req, res) => {
   }
 });
 
-// Public: search/paginate the pre-2026 legacy roster.
+// Public: search/paginate the pre-2026 legacy roster. Shared by two very
+// different callers, distinguished by `directory`:
+//  - the legacy PIN-login name picker (default) — must return bare
+//    legacy_members.id values, since picking a name feeds straight into
+//    GET /api/legacy-members/:id, which only looks in that table.
+//  - the public Members directory (`directory=1`) — also wants everyone
+//    admitted since the legacy roster was imported (admin-approved
+//    applications, manually-added members), so it merges in active
+//    `members` rows. A legacy entry already claimed by a real member row is
+//    represented once, via the legacy branch's join — the second branch
+//    excludes any member row a legacy_members entry already points to, by
+//    checking for that link directly (NOT by source: most of the roster's
+//    member rows carry source = 'legacy_import' from the bulk promotion,
+//    not 'legacy_claim', and excluding only the latter would have listed
+//    those 1,565 rows a second time). Unlinked rows have no matching
+//    legacy_members id, so their `id` is prefixed ("member-12") —
+//    directory-only, display-only, never fed back into the login lookup.
+const LEGACY_ONLY_CTE = `
+  WITH combined AS (
+    SELECT lm.id AS row_id, 'legacy' AS kind, lm.name, lm.detail,
+           lm.profile_completed AS claimed, m.membership_no, m.id AS member_id
+    FROM legacy_members lm
+    LEFT JOIN members m ON m.id = lm.claimed_member_id
+  )
+`;
+const DIRECTORY_CTE = `
+  WITH combined AS (
+    SELECT lm.id AS row_id, 'legacy' AS kind, lm.name, lm.detail,
+           lm.profile_completed AS claimed, m.membership_no, m.id AS member_id
+    FROM legacy_members lm
+    LEFT JOIN members m ON m.id = lm.claimed_member_id
+    UNION ALL
+    SELECT m.id AS row_id, 'member' AS kind, m.name, NULL::text AS detail,
+           false AS claimed, m.membership_no, m.id AS member_id
+    FROM members m
+    WHERE m.status = 'active'
+      AND NOT EXISTS (SELECT 1 FROM legacy_members lm2 WHERE lm2.claimed_member_id = m.id)
+  )
+`;
 app.get("/api/legacy-members", async (req, res) => {
-  const { q: search } = req.query;
+  const { q: search, directory } = req.query;
   const limit = Math.min(Number(req.query.limit) || 60, 200);
   const offset = Number(req.query.offset) || 0;
   const where = [];
   const params = [];
   if (search) {
     params.push(`%${search}%`);
-    where.push(`lm.name ILIKE $${params.length}`);
+    where.push(`name ILIKE $${params.length}`);
   }
   const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
-  const { rows: countRows } = await q(`SELECT count(*)::int AS n FROM legacy_members lm ${clause}`, params);
+  const cte = directory ? DIRECTORY_CTE : LEGACY_ONLY_CTE;
+  const idExpr = directory ? `kind || '-' || row_id` : `row_id`;
+  const { rows: countRows } = await q(`${cte} SELECT count(*)::int AS n FROM combined ${clause}`, params);
   params.push(limit, offset);
-  // Every roster entry has a linked member record with a fixed membership
-  // number (see server/promote-legacy-members.js) — order by that number's
-  // own id, the stable identity it's derived from, not by name.
+  // Order by the underlying member record's own id — the stable identity
+  // both branches are keyed on — nulls (not-yet-claimed legacy entries)
+  // last, alphabetical within those.
   const { rows } = await q(
-    `SELECT lm.id, lm.name, lm.detail, lm.profile_completed AS claimed, m.membership_no
-     FROM legacy_members lm
-     LEFT JOIN members m ON m.id = lm.claimed_member_id
+    `${cte}
+     SELECT ${idExpr} AS id, name, detail, claimed, membership_no
+     FROM combined
      ${clause}
-     ORDER BY m.id ASC NULLS LAST, lm.name ASC
+     ORDER BY member_id ASC NULLS LAST, name ASC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );

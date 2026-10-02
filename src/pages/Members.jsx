@@ -22,7 +22,7 @@ export default function Members() {
     setErr("");
     const t = setTimeout(() => {
       api
-        .listLegacyMembers({ q, limit })
+        .listLegacyMembers({ q, limit, directory: 1 })
         .then((res) => {
           if (!alive) return;
           setItems(res.members);
