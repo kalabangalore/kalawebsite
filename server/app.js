@@ -127,7 +127,7 @@ async function emailNotification(receipt, certificatePreview, meta) {
   const esc = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.org";
   const row = (label, value) =>
     `<tr><td style="padding:6px 0;color:#5c6f66;font-size:13px;width:150px;vertical-align:top;">${label}</td>` +
     `<td style="padding:6px 0;color:#1a2a25;font-size:14px;font-weight:600;">${value}</td></tr>`;
@@ -208,7 +208,7 @@ async function emailCertificate(member, certificatePreview) {
   const transport = getMailer();
   if (!transport || !member.email) return false;
 
-  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.org";
   const certMime = certificatePreview?.mimeType || "image/png";
   const attachments = certificatePreview
     ? [{ filename: `certificate.${extFor(certMime)}`, content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: certMime }]
@@ -274,7 +274,7 @@ async function emailRejection(member, reason) {
   const transport = getMailer();
   if (!transport || !member.email) return false;
 
-  const siteUrl = process.env.SITE_URL || "https://kalaonline.com";
+  const siteUrl = process.env.SITE_URL || "https://kalaonline.org";
   const safeName = escHtml(member.name);
   const safeReason = escHtml(reason);
 
