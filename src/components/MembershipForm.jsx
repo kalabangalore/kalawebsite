@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../lib/api";
-import CertificateCanvas, { canvasToAttachment } from "./CertificateCanvas";
+import CertificateCanvas from "./CertificateCanvas";
 
 const TYPES = [
   { value: "life", label: "Life", fee: "₹300 / annum" },
@@ -42,9 +42,9 @@ function Field({ label, children, full }) {
 // Certificate preview with draggable "Membership No." / "Name" markers —
 // dragging only ever adjusts local state (see beginDrag in the parent);
 // it's proposed to the office for review on submit, never applied live.
-function DraggableCert({ variant, layout, data, onDrag, stageRef }) {
+function DraggableCert({ variant, layout, data, onDrag }) {
   return (
-    <div className="certlayout__stage" ref={stageRef}>
+    <div className="certlayout__stage">
       <CertificateCanvas variant={variant} layout={layout} data={data} />
       {layout && (
         <>
@@ -80,7 +80,6 @@ export default function MembershipForm() {
   const [receiptName, setReceiptName] = useState("");
   const [receiptErr, setReceiptErr] = useState("");
   const [layoutOverride, setLayoutOverride] = useState(null);
-  const certWrapRef = useRef(null);
   const dragRef = useRef(null);
 
   useEffect(() => {
@@ -174,9 +173,7 @@ export default function MembershipForm() {
       if (layoutOverride) {
         api.proposeCertificateLayout(layoutOverride).catch(() => {});
       }
-      const canvas = certWrapRef.current?.querySelector("canvas");
-      const certificatePreview = canvas ? canvasToAttachment(canvas) : null;
-      const res = await api.submitMembership({ ...f, receipt, certificatePreview });
+      const res = await api.submitMembership({ ...f, receipt });
       setCertRef(res.certificate_ref || "");
       setState("done");
     } catch (e2) {
@@ -381,7 +378,7 @@ export default function MembershipForm() {
       {/* Certificate live preview */}
       <div className="mform-live">
         <span className="tag">Live preview</span>
-        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} stageRef={certWrapRef} />
+        <DraggableCert variant="draft" layout={effectiveLayout} data={previewData} onDrag={beginDrag} />
         <p className="formnote" style={{ marginTop: 10 }}>
           Updates as you fill in your name and membership type. Drag "Membership No." or "Name" for
           minor position adjustments — sent to the office for review, never applied automatically.

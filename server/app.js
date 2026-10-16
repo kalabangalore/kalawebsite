@@ -102,7 +102,7 @@ function getMailer() {
 // round trip takes several seconds, and this whole step has to finish
 // inside a single serverless request/response cycle, so one send instead
 // of two meaningfully cuts the risk of hitting a platform timeout.
-async function emailNotification(receipt, certificatePreview, meta) {
+async function emailNotification(receipt, meta) {
   const transport = getMailer();
   if (!transport) {
     console.warn("GMAIL_USER/GMAIL_APP_PASSWORD not set — skipping notification email");
@@ -115,13 +115,13 @@ async function emailNotification(receipt, certificatePreview, meta) {
   // that must not receive applicant data).
   const to = meta.email || process.env.GMAIL_USER;
 
+  // Acknowledgment only — no certificate attachment here. The office's rule
+  // is that no certificate, signed or not, ever reaches a member before an
+  // admin has approved the application; the real (signed) one goes out
+  // separately via emailCertificate once that happens.
   const attachments = [];
   if (receipt) {
     attachments.push({ filename: receipt.fileName || "receipt", content: Buffer.from(receipt.fileBase64, "base64"), contentType: receipt.mimeType });
-  }
-  if (certificatePreview) {
-    const mimeType = certificatePreview.mimeType || "image/png";
-    attachments.push({ filename: `certificate-preview.${extFor(mimeType)}`, content: Buffer.from(certificatePreview.fileBase64, "base64"), contentType: mimeType });
   }
 
   const esc = (s) =>
@@ -148,9 +148,9 @@ async function emailNotification(receipt, certificatePreview, meta) {
           Thank you for applying to the Karnataka State Library Association, <b>${esc(meta.name)}</b>.
         </p>
         <p style="color:#5c6f66;font-size:14px;line-height:1.7;margin:0 0 20px;">
-          Your application has been received and is under review. Attached is a copy of your payment
-          receipt and a preview of your certificate for your records — the membership number and
-          verification date shown will be filled in once the application is approved.
+          Your application has been received and is under review — attached is a copy of your payment
+          receipt for your records. Your signed certificate will be emailed to you once the office
+          approves the application.
         </p>
         <table role="presentation" width="100%" style="border-top:1px solid #d8cdb5;border-bottom:1px solid #d8cdb5;margin-bottom:20px;">
           ${row("Name", esc(meta.name))}
@@ -177,9 +177,9 @@ async function emailNotification(receipt, certificatePreview, meta) {
   const text = [
     `Thank you for applying to the Karnataka State Library Association, ${meta.name}.`,
     "",
-    "Your membership application has been received and is under review. Attached is a copy of your " +
-      "payment receipt and a preview of your certificate for your records — the membership number and " +
-      "verification date shown will be filled in once the application is approved.",
+    "Your membership application has been received and is under review — attached is a copy of your " +
+      "payment receipt for your records. Your signed certificate will be emailed to you once the " +
+      "office approves the application.",
     "",
     "Application details:",
     `Name: ${meta.name}`,
@@ -416,7 +416,7 @@ app.post("/api/membership", async (req, res) => {
 
     let receiptEmailed = false;
     try {
-      receiptEmailed = await emailNotification(req.body.receipt, req.body.certificatePreview, meta);
+      receiptEmailed = await emailNotification(req.body.receipt, meta);
     } catch (err) {
       // Don't lose the whole application over an email hiccup — the
       // office can chase the receipt separately if this happens.
