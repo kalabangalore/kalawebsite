@@ -40,7 +40,7 @@ export const COUNCIL_ROLES = ["President", "Vice Presidents", "Secretaries", "Tr
 export const DEFAULT_PAGE_HEADS = {
   governingCouncil: { crumbLabel: "Governing Council", title: "The Executive Councils", lead: "The office bearers who steer the Association for the 2024–2026 term." },
   members: { crumbLabel: "Members", title: "The membership roll", lead: "More than fifteen hundred library and information professionals across Karnataka and beyond. Search by name — listed in order of membership ID." },
-  activities: { crumbLabel: "Activities", title: "National Library Week 2025", lead: "A week of talks, field meets and partner sessions hosted across Karnataka's universities, colleges and research centres." },
+  activities: { crumbLabel: "Activities", title: "National Library Week 2026", lead: "A week of talks, field meets and partner sessions hosted across Karnataka's universities, colleges and research centres." },
   blog: { crumbLabel: "Blog", title: "News and Views", lead: "Notes from the Association — conferences, library weeks, and the ideas that move the profession forward." },
   whatsNew: { crumbLabel: "What's New", title: "What's new", lead: "Official notices and circulars from the Association." },
   contact: { crumbLabel: "Contact", title: "Get in touch", lead: "Questions about membership, events or the Association? Write to the General Secretary." },

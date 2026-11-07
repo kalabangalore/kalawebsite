@@ -1,66 +1,58 @@
 export const activities = [
   {
-    "date": "2025-11-20",
-    "day": "Thursday",
-    "venue": "Learning Resource Centre, JAIN (Deemed to-be University) 9 Block, Jayanagar, Bengaluru",
-    "speaker": "Event Coordinator: Dr. Meeramani N",
-    "time": "11.00 AM",
-    "link": "https://xxxxxx"
-  },
-  {
-    "date": "2025-11-19",
-    "day": "Wednesday",
-    "venue": "Father Muller Medical College, Kankanadi, Mangalore",
-    "speaker": "Dr. Mamata P Rai, Associate Professor, Yenepoya University, Mangalore. Event Coordinator: Dr. Janet Dotty Lobo",
-    "time": "03.00 PM",
-    "link": "https://xxxxxx"
-  },
-  {
-    "date": "2025-11-18",
-    "day": "Tuesday",
-    "venue": "IEEE # 26/1, 5th Floor, WTC-Brigade Gateway Campus, Dr. Rajkumar Road, Malleshwaram,West Bangalore",
-    "speaker": "Event Coordinator: Dr. Dhanu Pattanashetti",
-    "time": "05.00 PM to 06.00 PM",
-    "link": "https://docs.google.com/forms/d/e/1FAIpQLSdSFbhOtwNfTLwhB7Bos-8OFCEKbHa_jojDRol3RGdFfALAow/viewform"
-  },
-  {
-    "date": "2025-11-17",
-    "day": "Monday",
-    "venue": "Central Library Auditorium, Townhall Circle, Tumakuru",
-    "speaker": "Dr. A Rupesh Kumar, Associate Professor, TUT. Event Coordinator: Mr. Diwakara, Deputy Director, Commissionerate of Public Libraries, Tumakuru",
-    "time": "11.00 AM",
-    "link": "https://xxxxxxx"
-  },
-  {
-    "date": "2025-11-16",
-    "day": "Sunday",
-    "venue": "Brigade Library, R V University, 8th Mile, Mysore Road, Bengaluru",
-    "speaker": "Dr. Appa Saheb Naikal, Librarian, IIM Kozhikode. Event Coordinator: Dr. Jairaj S Hosamani",
-    "time": "11.00 AM",
-    "link": "https://forms.gle/LHwodGHMZmRkZYVL6"
-  },
-  {
-    "date": "2025-11-15",
+    "date": "2026-11-14",
     "day": "Saturday",
-    "venue": "Kittel Arts College, Dharwad",
-    "speaker": "Event Coordinator: Dr. Rajesh Turamari",
+    "venue": "Inauguration — Library, SUBN Theosophical Women's College, Hospet",
+    "speaker": "Event Coordinator: Dr. Sujatha D N, Sr. Librarian",
     "time": "11.00 AM",
-    "link": "https://xxxxxxxx"
+    "link": ""
   },
   {
-    "date": "2025-11-14",
-    "day": "Friday",
-    "venue": "DVS Arts, Science and Commerce College, Shivamogga",
-    "speaker": "Event Coordinator: Mr. Niranjana K",
-    "time": "11.00 AM",
-    "link": "https://xxxxxxxx"
+    "date": "2026-11-16",
+    "day": "Monday",
+    "venue": "Library, ST PAULS COLLEGE, Bangalore",
+    "speaker": "Event Coordinator: Ms. Malini T S, Librarian",
+    "time": "12.30 PM",
+    "link": ""
   },
   {
-    "date": "2026-02-26",
+    "date": "2026-11-16",
+    "day": "Monday",
+    "venue": "IEEE # 26/1, 5th Floor, WTC-Brigade Gateway Campus, Dr. Rajkumar Road, Malleshwaram, West Bangalore",
+    "speaker": "Event Coordinator: Dr. Dhanu Pattanashetti, Senior IEEE Client Services/University Partnership Program Manager",
+    "time": "04.30 PM",
+    "link": ""
+  },
+  {
+    "date": "2026-11-17",
+    "day": "Tuesday",
+    "venue": "Library, Dr. A V Baliga College of Arts and Science, Kumta",
+    "speaker": "Event Coordinator: Dr. Shivanand D Bulla, Sr. Librarian",
+    "time": "11.00 AM",
+    "link": ""
+  },
+  {
+    "date": "2026-11-18",
+    "day": "Wednesday",
+    "venue": "Library, Maharani's Arts College for Women, JLB Road, Mysuru-570005",
+    "speaker": "Event Coordinator: Dr. Pramodini B., Librarian & HOD of Library and Information Centre",
+    "time": "11.00 AM",
+    "link": ""
+  },
+  {
+    "date": "2026-11-19",
     "day": "Thursday",
-    "venue": "Siddaganga Institute of Technology (SIT), B H Road, Tumkur",
-    "speaker": "Dr. Gururaj Karajagi",
-    "time": "9.00 AM to 05.00 PM",
-    "link": "https://forms.gle/3H6RJKDC2GUsd5Lc8"
+    "venue": "Library, Alliance University, Chandapura, Bangalore",
+    "speaker": "Event Coordinator: Dr. I N Prakash, University Librarian",
+    "time": "11.00 AM",
+    "link": ""
+  },
+  {
+    "date": "2026-11-20",
+    "day": "Friday",
+    "venue": "Valedictory — Bidar University Library, Gnyana Karanji campus in Halahalli (K), Bhalki Taluk, Bidar district",
+    "speaker": "Event Coordinator: Mr. Nagesh, Guest Faculty, Library",
+    "time": "11.00 AM",
+    "link": ""
   }
 ];

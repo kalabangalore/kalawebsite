@@ -43,7 +43,7 @@ export const stats = [
   { value: 1500, suffix: "+", label: "Registered members" },
   { value: 60, suffix: "+", label: "Years of service" },
   { value: 5, suffix: "", label: "Membership classes" },
-  { value: 8, suffix: "", label: "NLW-2025 events" },
+  { value: 7, suffix: "", label: "NLW-2026 events" },
 ];
 
 // Ranganathan's Five Laws — the intellectual spine of the association.

@@ -28,7 +28,7 @@ export default function Activities() {
         <div className="wrap">
           <Reveal>
             <span className="eyebrow">The schedule</span>
-            <h2 className="section-title">Eight events. One week. Across the state.</h2>
+            <h2 className="section-title">Seven events. One week. Across the state.</h2>
           </Reveal>
 
           <Stagger className="tt mt-l" gap={0.06}>
