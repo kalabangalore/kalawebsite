@@ -15,6 +15,7 @@ import BlogPost from "./pages/BlogPost";
 import WhatsNew from "./pages/WhatsNew";
 import Contact from "./pages/Contact";
 import Certificate from "./pages/Certificate";
+import ReelContestTerms from "./pages/ReelContestTerms";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/whats-new" element={<Page><WhatsNew /></Page>} />
           <Route path="/contact" element={<Page><Contact /></Page>} />
           <Route path="/certificate" element={<Page><Certificate /></Page>} />
+          <Route path="/reel-contest-terms" element={<Page><ReelContestTerms /></Page>} />
           <Route path="*" element={<Page><NotFound /></Page>} />
       </Routes>
       <Newsletter />
